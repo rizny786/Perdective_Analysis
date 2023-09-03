@@ -1,41 +1,561 @@
----
----
----
-
-1.  Basic R computations
+### Basic R computations {style="color: Blue"}
 
 ```{r}
 # This line is a comment! The following line is not
 1+1
-1+1 # I can also have comments, together with commands. Anything after # is ignored.
+1+1 # I can also have comments, together with commands. Anything after # is ignored
+```
 
+```{r}
 a <- 5
 b <- 2
-
-a + b # addition
-
-a - b # subtraction
-
-a * b # multiplication
-
-a / b # division
-
-total <- a + b
-
-total
-
-print(total)
-
-sum(a,b)
-
-total == sum(a,b)
-
-total == a - b
-
-c(5,8)
-
-all <- c(a,b,total)
-print(all)
-
-
 ```
+
+```{r}
+a + b # addition
+```
+
+```{r}
+a * b # multiplication
+```
+
+```{r}
+a / b # division
+```
+
+```{r}
+total <- a + b
+```
+
+```{r}
+total
+```
+
+```{r}
+print(total)
+```
+
+```{r}
+sum(a,b)
+```
+
+```{r}
+total == sum(a,b)
+```
+
+```{r}
+total == a - b
+```
+
+```{r}
+c(5,8)
+```
+
+```{r}
+all <- c(a,b,total)
+```
+
+### Loading packages into R
+
+```{r}
+library(forecast)
+library(tsutils)
+```
+
+### Loading data into R
+
+```{r}
+Y <- read.csv("./workshop1R.csv")
+print(Y) # The result is not shown here!
+```
+
+```{r}
+colnames(Y)
+```
+
+## Exercises
+
+I have furnished my observational summaries at the conclusion of each time series analysis, culminating in comprehensive responses to the exercise questions collectively.
+
+### Level_A - Time Series {style="color: blue"}
+
+#### Load Data
+
+```{r}
+y <- Y[,1]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Verifying Data
+
+```{r}
+yy <- y[1:48]
+print(yy)
+```
+
+```{r}
+class(y) # Our time series object
+```
+
+```{r}
+class(yy) # A simple vector of numeric values
+```
+
+```{r}
+yy == y.trn
+```
+
+```{r}
+all(yy==y.trn) # all() provides the overall logical comparison result
+```
+
+#### Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2) # Boxplots of the values of each month
+```
+
+```{r}
+# The average (red) value for each month with a series of each month across years (blue)
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation
+
+-   **Trend Analysis:** A thorough examination of the data reveals the absence of any discernible trend. This observation is further substantiated by the visualization graphs, which clearly indicate the absence of both upward and downward trends in the dataset.
+
+-   **Seasonality Assessment:** A meticulous statistical analysis also confirms the absence of seasonality within the dataset. The accompanying visualization graphs corroborate this finding by demonstrating the absence of any repetitive patterns that would typically be indicative of seasonality.
+
+-   **Conclusion:** In summary, our analysis unequivocally concludes that neither trend nor seasonality is evident in this time series data.
+
+### Level_B -Time Series {style="color: blue"}
+
+#### Load Data
+
+```{r}
+y <- Y[,2]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2) # Boxplots of the values of each month
+```
+
+```{r}
+# The average (red) value for each month with a series of each month across years (blue)
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation
+
+-   **Trend Analysis:** Our statistical examination discerns the presence of a discernible trend within the data, further reinforced by the visualization graph which affirms the existence of a trend pattern.
+
+-   **Seasonality Assessment:** Conversely, our statistical analysis fails to detect any significant seasonality within the dataset. This finding is corroborated by the visualization graph, which illustrates the absence of repetitive patterns typically indicative of seasonality.
+
+-   **Conclusion:** In summary, the analysis reveals the existence of a trend while negating the presence of seasonality within this time series data.
+
+### LevelShift - Time Series {style="color: blue"}
+
+#### Load Data
+
+```{r}
+y <- Y[,3]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn,trend=FALSE)
+```
+
+```{r}
+seasplot(y.trn,outplot=2) # Boxplots of the values of each month
+```
+
+```{r}
+# The average (red) value for each month with a series of each month across years (blue)
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation
+
+### Trend_A - Time Series {style="color: blue"}
+
+#### Load Data
+
+```{r}
+y <- Y[,4]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2) # Boxplots of the values of each month
+```
+
+```{r}
+# The average (red) value for each month with a series of each month across years (blue)
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation
+
+### Trend_B - Time Series {style="color: blue"}
+
+#### Load Data
+
+```{r}
+y <- Y[,5]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2) # Boxplots of the values of each month
+```
+
+```{r}
+# The average (red) value for each month with a series of each month across years (blue)
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation
+
+### Season_A - Time Series {style="color: blue"}
+
+#### Load Data
+
+```{r}
+y <- Y[,6]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2) # Boxplots of the values of each month
+```
+
+```{r}
+# The average (red) value for each month with a series of each month across years (blue)
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation
+
+### Season_B - Time Series {style="color: blue"}
+
+#### Load Data
+
+```{r}
+y <- Y[,7]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2) # Boxplots of the values of each month
+```
+
+```{r}
+# The average (red) value for each month with a series of each month across years (blue)
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation
+
+### TrendSeason - Time Series {style="color: blue"}
+
+#### Load Data
+
+```{r}
+y <- Y[,8]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2) # Boxplots of the values of each month
+```
+
+```{r}
+# The average (red) value for each month with a series of each month across years (blue)
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation
