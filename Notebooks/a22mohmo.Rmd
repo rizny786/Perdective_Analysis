@@ -1,59 +1,15 @@
-### Basic R computations {style="color: Blue"}
-
-```{r}
-# This line is a comment! The following line is not
-1+1
-1+1 # I can also have comments, together with commands. Anything after # is ignored
-```
-
-```{r}
-a <- 5
-b <- 2
-```
-
-```{r}
-a + b # addition
-```
-
-```{r}
-a * b # multiplication
-```
-
-```{r}
-a / b # division
-```
-
-```{r}
-total <- a + b
-```
-
-```{r}
-total
-```
-
-```{r}
-print(total)
-```
-
-```{r}
-sum(a,b)
-```
-
-```{r}
-total == sum(a,b)
-```
-
-```{r}
-total == a - b
-```
-
-```{r}
-c(5,8)
-```
-
-```{r}
-all <- c(a,b,total)
-```
+---
+title: "Assignment 1 - a22mohmo"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '5'
+    df_print: paged
+  word_document: default
+  pdf_document:
+    toc: yes
+    toc_depth: 5
+---
 
 ### Loading packages into R
 
@@ -66,11 +22,6 @@ library(tsutils)
 
 ```{r}
 Y <- read.csv("./workshop1R.csv")
-print(Y) # The result is not shown here!
-```
-
-```{r}
-colnames(Y)
 ```
 
 ## Exercises
@@ -79,7 +30,7 @@ I have furnished my observational summaries at the conclusion of each time serie
 
 ### Level_A - Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- Y[,1]
@@ -95,14 +46,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Verifying Data
+#### Verifying Data {style="color: grey"}
 
 ```{r}
 yy <- y[1:48]
@@ -125,7 +76,7 @@ yy == y.trn
 all(yy==y.trn)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
@@ -155,7 +106,7 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
 -   **Trend Analysis:** A thorough examination of the data reveals the absence of any discernible trend. This observation is further substantiated by the visualization graphs, which clearly indicate the absence of both upward and downward trends in the dataset.
 
@@ -165,7 +116,7 @@ dc <- decomp(y.trn,outplot=1)
 
 ### Level_B -Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- Y[,2]
@@ -181,14 +132,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
@@ -218,7 +169,7 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
 -   **Trend Analysis:** Statistically, there appears to be evidence of a trend within the data. However, it is important to note that the visualization graphs do not unequivocally confirm the presence of this trend, warranting further investigation.
 
@@ -228,7 +179,7 @@ dc <- decomp(y.trn,outplot=1)
 
 ### LevelShift - Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- Y[,3]
@@ -246,14 +197,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
@@ -283,17 +234,17 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
-**Trend Analysis:** Our statistical assessment unequivocally identifies the presence of a discernible trend within the dataset. This finding is further validated by the visualization graph, which unmistakably portrays the existence of a trend.
+**Trend Analysis:** Statistical assessment unequivocally identifies the presence of a discernible trend within the dataset. This finding is further validated by the visualization graph, which unmistakably portrays the existence of a trend.
 
-**Seasonality Evaluation:** In stark contrast, our rigorous statistical analysis fails to detect any significant seasonality within the dataset. This outcome is in alignment with the visualization graph, which provides compelling evidence of the absence of repetitive patterns indicative of seasonality.
+**Seasonality Evaluation:** In stark contrast, rigorous statistical analysis fails to detect any significant seasonality within the dataset. This outcome is in alignment with the visualization graph, which provides compelling evidence of the absence of repetitive patterns indicative of seasonality.
 
 **Conclusion:** In summary, analysis conclusively asserts the existence of a trend while simultaneously discounting the presence of seasonality within this time series data.
 
 ### Trend_A - Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- Y[,4]
@@ -309,14 +260,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
@@ -346,7 +297,7 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
 -   **Trend Analysis:** The statistical analysis conducted indicates the presence of a discernible trend within the dataset, a conclusion further supported by the visualization graphs.
 
@@ -356,7 +307,7 @@ dc <- decomp(y.trn,outplot=1)
 
 ### Trend_B - Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- Y[,5]
@@ -372,14 +323,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
@@ -409,7 +360,7 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
 -   **Trend Analysis:** Through a meticulous examination of the data, it is evident that a discernible trend exists, a conclusion supported by the visualization graphs.
 
@@ -419,7 +370,7 @@ dc <- decomp(y.trn,outplot=1)
 
 ### Season_A - Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- Y[,6]
@@ -435,14 +386,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
@@ -470,7 +421,7 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
 -   **Trend Analysis:** The static analysis suggests the presence of a trend in the data, but this observation is not corroborated by the visual examination, as the graphs do not display any clear trend.
 
@@ -480,7 +431,7 @@ dc <- decomp(y.trn,outplot=1)
 
 ### Season_B - Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- Y[,7]
@@ -496,14 +447,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
@@ -533,7 +484,7 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
 -   **Trend Analysis:** Both the static analysis and visual examination do not show any evidence of a trend in the data. There is no discernible trend statically or visually.
 
@@ -543,7 +494,7 @@ dc <- decomp(y.trn,outplot=1)
 
 ### TrendSeason - Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- Y[,8]
@@ -559,14 +510,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
@@ -596,7 +547,7 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
 **Trend Analysis:** Both the static analysis and visual examination reveal the presence of a discernible trend in the data, with clear evidence of a trend both statistically and visually.
 
@@ -606,19 +557,23 @@ dc <- decomp(y.trn,outplot=1)
 
 ### Does your understanding of the plots agree with the underlying model? {style="color: green"}
 
-Upon careful examination of the provided time series analyses, it is evident that there may be occasional disparities in the interpretation of trends and seasonality between the statical results derived from the SeasonalPot model and the visual examination.
+::: {style="color: black"}
+Upon careful examination of the provided time series analyses, it is evident that there may be occasional disparities in the interpretation of trends and seasonality between the statistical results derived from the model and the visual examination.
 
-While the SeasonalPot model provides a statistical perspective, the visual examination offers an additional layer of insight. These differences in interpretation are duly recognized, and the conclusions drawn in each analysis take into consideration both the statical results and the visual evidence presented in the plots.
+While the model provides a statistical perspective, the visual examination offers an additional layer of insight. These differences in interpretation are duly recognized, and the conclusions drawn in each analysis take into consideration both the statistical results and the visual evidence presented in the plots.
 
-In response to the question, it can be stated that there is a degree of agreement between the understanding derived from the plots and the underlying model's SeasonalPot analysis. However, it is also important to acknowledge that the agreement is not absolute, and the conclusions consider the insights from both sources to provide a comprehensive assessment of the data's trends and seasonality.
+In response to the question, it can be stated that there is a degree of agreement between the understanding derived from the plots and the underlying model's analysis. However, it is also important to acknowledge that the agreement is not absolute, and the conclusions consider the insights from both sources to provide a comprehensive assessment of the data's trends and seasonality.
+:::
 
 ### Does decomp() know when to remove the trend or the seasonality? {style="color: green"}
 
+::: {style="color: black"}
 The decomp()function, as with similar decomposition methods, doesn't make automatic decisions about removing trend or seasonality. Users need to specify the decomposition method and choose whether to keep or eliminate these components based on their specific analysis goals and the nature of the data they are working with.
+:::
 
 ### AirPassengers - Time Series {style="color: blue"}
 
-#### Load Data
+#### Load Data {style="color: grey"}
 
 ```{r}
 y <- AirPassengers
@@ -629,14 +584,14 @@ print(y)
 plot(y)
 ```
 
-#### Constructing estimation and hold-out sets
+#### Constructing estimation and hold-out sets {style="color: grey"}
 
 ```{r}
 y.tst <- tail(y,29)
 y.trn <- head(y,115)
 ```
 
-#### Exploration
+#### Exploration {style="color: grey"}
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
@@ -666,7 +621,7 @@ seasplot(y.trn,outplot=4)
 dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation
+#### Observation {style="color: black"}
 
 -   **Trend Analysis:** Both the static analysis and visual examination distinctly indicate the presence of an additive trend in the data, with clear evidence of a trend both statistically and visually.
 
