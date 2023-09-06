@@ -1,0 +1,630 @@
+---
+title: "Assignment 1 - a22mohmo"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '5'
+    df_print: paged
+  word_document: default
+  pdf_document:
+    toc: yes
+    toc_depth: 5
+---
+
+### Loading packages into R
+
+```{r}
+library(forecast)
+library(tsutils)
+```
+
+### Loading data into R
+
+```{r}
+Y <- read.csv("./workshop1R.csv")
+```
+
+## Exercises
+
+I have furnished my observational summaries at the conclusion of each time series analysis, culminating in comprehensive responses to the exercise questions collectively.
+
+### Level_A - Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- Y[,1]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Verifying Data {style="color: grey"}
+
+```{r}
+yy <- y[1:48]
+print(yy)
+```
+
+```{r}
+class(y) # Our time series object
+```
+
+```{r}
+class(yy) # A simple vector of numeric values
+```
+
+```{r}
+yy == y.trn
+```
+
+```{r}
+all(yy==y.trn)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+-   **Trend Analysis:** A thorough examination of the data reveals the absence of any discernible trend. This observation is further substantiated by the visualization graphs, which clearly indicate the absence of both upward and downward trends in the dataset.
+
+-   **Seasonality Assessment:** A meticulous statistical analysis also confirms the absence of seasonality within the dataset. The accompanying visualization graphs corroborate this finding by demonstrating the absence of any repetitive patterns that would typically be indicative of seasonality.
+
+-   **Conclusion:** In summary, analysis unequivocally concludes that neither trend nor seasonality is evident in this time series data.
+
+### Level_B -Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- Y[,2]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+-   **Trend Analysis:** Statistically, there appears to be evidence of a trend within the data. However, it is important to note that the visualization graphs do not unequivocally confirm the presence of this trend, warranting further investigation.
+
+-   **Seasonality Assessment:** Conversely, Statistical analysis fails to detect any significant seasonality within the dataset. This finding is corroborated by the visualization graph, which illustrates the absence of repetitive patterns typically indicative of seasonality.
+
+-   **Conclusion:** In summary, while there is some statistical indication of a trend, it is not definitively supported by the visualization graphs. Additionally, there is a clear absence of seasonality within this time series data.
+
+### LevelShift - Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- Y[,3]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+# The syntax of end is c(Year,Month), or more generally
+# c(season,seasonal period).
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+**Trend Analysis:** Statistical assessment unequivocally identifies the presence of a discernible trend within the dataset. This finding is further validated by the visualization graph, which unmistakably portrays the existence of a trend.
+
+**Seasonality Evaluation:** In stark contrast, rigorous statistical analysis fails to detect any significant seasonality within the dataset. This outcome is in alignment with the visualization graph, which provides compelling evidence of the absence of repetitive patterns indicative of seasonality.
+
+**Conclusion:** In summary, analysis conclusively asserts the existence of a trend while simultaneously discounting the presence of seasonality within this time series data.
+
+### Trend_A - Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- Y[,4]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+-   **Trend Analysis:** The statistical analysis conducted indicates the presence of a discernible trend within the dataset, a conclusion further supported by the visualization graphs.
+
+-   **Seasonality Assessment:** Conversely, the statistical examination unequivocally affirms the absence of significant seasonality within the dataset. This observation aligns with the visualization graphs, which lack repetitive patterns indicative of seasonality.
+
+-   **Conclusion:** In summary, the analysis confirms the existence of a trend while conclusively ruling out the presence of seasonality within this time series data.
+
+### Trend_B - Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- Y[,5]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+-   **Trend Analysis:** Through a meticulous examination of the data, it is evident that a discernible trend exists, a conclusion supported by the visualization graphs.
+
+-   **Seasonality Assessment:** Conversely, the analysis conducted demonstrates the absence of significant seasonality within the dataset. This determination aligns with the visual evidence presented in the graphs, which notably lack any recurring patterns indicative of seasonality.
+
+-   **Conclusion:** In summary, the analysis affirms the presence of a trend while simultaneously discounting the presence of seasonality within this time series data.
+
+### Season_A - Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- Y[,6]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+`{seasplot(y.trn,outplot=3)}`
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+-   **Trend Analysis:** The static analysis suggests the presence of a trend in the data, but this observation is not corroborated by the visual examination, as the graphs do not display any clear trend.
+
+-   **Seasonality Assessment:** Both the static analysis and visual inspection indicate the presence of seasonality in the dataset, confirming the recurring patterns associated with seasonality.
+
+-   **Conclusion:** In summary, the dataset exhibits seasonality, while a discernible trend is not apparent within the time series data.
+
+### Season_B - Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- Y[,7]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+-   **Trend Analysis:** Both the static analysis and visual examination do not show any evidence of a trend in the data. There is no discernible trend statically or visually.
+
+-   **Seasonality Assessment:** Conversely, both the static analysis and visual inspection confirm the presence of seasonality within the dataset, with clear recurring patterns evident both statistically and visually.
+
+-   **Conclusion:** In summary, the dataset reveals the presence of seasonality while lacking a discernible trend within the time series data.
+
+### TrendSeason - Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- Y[,8]
+print(y)
+```
+
+```{r}
+y <- ts(y,frequency=12,end=c(2018,11))
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+**Trend Analysis:** Both the static analysis and visual examination reveal the presence of a discernible trend in the data, with clear evidence of a trend both statistically and visually.
+
+**Seasonality Assessment:** Similarly, both the static analysis and visual inspection confirm the presence of seasonality within the dataset, with recurring patterns evident both statistically and visually.
+
+**Conclusion:** In conclusion, the dataset unmistakably demonstrates the presence of both a discernible trend and seasonality, indicating significant temporal patterns within the time series data.
+
+### Does your understanding of the plots agree with the underlying model? {style="color: green"}
+
+::: {style="color: black"}
+Upon careful examination of the provided time series analyses, it is evident that there may be occasional disparities in the interpretation of trends and seasonality between the statistical results derived from the model and the visual examination.
+
+While the model provides a statistical perspective, the visual examination offers an additional layer of insight. These differences in interpretation are duly recognized, and the conclusions drawn in each analysis take into consideration both the statistical results and the visual evidence presented in the plots.
+
+In response to the question, it can be stated that there is a degree of agreement between the understanding derived from the plots and the underlying model's analysis. However, it is also important to acknowledge that the agreement is not absolute, and the conclusions consider the insights from both sources to provide a comprehensive assessment of the data's trends and seasonality.
+:::
+
+### Does decomp() know when to remove the trend or the seasonality? {style="color: green"}
+
+::: {style="color: black"}
+The decomp()function, as with similar decomposition methods, doesn't make automatic decisions about removing trend or seasonality. Users need to specify the decomposition method and choose whether to keep or eliminate these components based on their specific analysis goals and the nature of the data they are working with.
+:::
+
+### AirPassengers - Time Series {style="color: blue"}
+
+#### Load Data {style="color: grey"}
+
+```{r}
+y <- AirPassengers
+print(y)
+```
+
+```{r}
+plot(y)
+```
+
+#### Constructing estimation and hold-out sets {style="color: grey"}
+
+```{r}
+y.tst <- tail(y,29)
+y.trn <- head(y,115)
+```
+
+#### Exploration {style="color: grey"}
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+print(cma)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(y.trn,outplot=4)
+```
+
+```{r}
+dc <- decomp(y.trn,outplot=1)
+```
+
+#### Observation {style="color: black"}
+
+-   **Trend Analysis:** Both the static analysis and visual examination distinctly indicate the presence of an additive trend in the data, with clear evidence of a trend both statistically and visually.
+
+-   **Seasonality Assessment:** Similarly, both the static analysis and visual inspection consistently confirm the presence of seasonality within the dataset, with recurring patterns evident both statistically and visually.
+
+-   **Conclusion:** In summary, the data unequivocally exhibits both a discernible additive trend and seasonality, as supported by both static analysis and visual examination of this time series data.
