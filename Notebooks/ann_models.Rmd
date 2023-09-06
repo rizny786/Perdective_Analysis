@@ -1,630 +1,354 @@
 ---
-title: "Assignment 1 - a22mohmo"
-output:
-  html_document:
-    toc: yes
-    toc_depth: '5'
-    df_print: paged
-  word_document: default
-  pdf_document:
-    toc: yes
-    toc_depth: 5
+title: "Assignment 2"
+author: "Rizny Mubarak"
+date: "2023-09-05"
+output: pdf_document
 ---
 
-### Loading packages into R
-
 ```{r}
+# Load necessary libraries
 library(forecast)
 library(tsutils)
 ```
 
-### Loading data into R
+## Level A
+
+### 1. Loading Data
 
 ```{r}
+# Load data from csv file
 Y <- read.csv("./workshop1R.csv")
-```
-
-## Exercises
-
-I have furnished my observational summaries at the conclusion of each time series analysis, culminating in comprehensive responses to the exercise questions collectively.
-
-### Level_A - Time Series {style="color: blue"}
-
-#### Load Data {style="color: grey"}
-
-```{r}
+# Pick the first time series for modelling
 y <- Y[,1]
-print(y)
+# Transform it into a time series
+y <- ts(y,frequency=12)
 ```
 
-```{r}
-y <- ts(y,frequency=12,end=c(2018,11))
-print(y)
-```
-
-```{r}
-plot(y)
-```
-
-#### Constructing estimation and hold-out sets {style="color: grey"}
+### 2. Constructing estimation and hold-out sets
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
+print(y.trn)
 ```
 
-#### Verifying Data {style="color: grey"}
-
-```{r}
-yy <- y[1:48]
-print(yy)
-```
-
-```{r}
-class(y) # Our time series object
-```
-
-```{r}
-class(yy) # A simple vector of numeric values
-```
-
-```{r}
-yy == y.trn
-```
-
-```{r}
-all(yy==y.trn)
-```
-
-#### Exploration {style="color: grey"}
+### 3. Exploration
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
 ```
 
 ```{r}
-print(cma)
-```
-
-```{r}
 seasplot(y.trn)
 ```
 
+### 4. Forecasting
+
+#### 4.1 Model fitting
+
 ```{r}
-seasplot(y.trn,outplot=2)
+ets(y.trn,model="ANN")
 ```
 
 ```{r}
-seasplot(y.trn,outplot=3)
+fit1 <- ets(y.trn,model="ANN")
+print(fit1)
 ```
 
 ```{r}
-seasplot(y.trn,outplot=4)
+plot(fit1)
 ```
 
 ```{r}
-dc <- decomp(y.trn,outplot=1)
+class(fit1)
 ```
 
-#### Observation {style="color: black"}
+```{r}
+names(fit1)
+```
 
--   **Trend Analysis:** A thorough examination of the data reveals the absence of any discernible trend. This observation is further substantiated by the visualization graphs, which clearly indicate the absence of both upward and downward trends in the dataset.
+```{r}
+fit1$fitted
+```
 
--   **Seasonality Assessment:** A meticulous statistical analysis also confirms the absence of seasonality within the dataset. The accompanying visualization graphs corroborate this finding by demonstrating the absence of any repetitive patterns that would typically be indicative of seasonality.
+```{r}
+plot(y.trn)
+lines(fit1$fitted, col="red")
+```
 
--   **Conclusion:** In summary, analysis unequivocally concludes that neither trend nor seasonality is evident in this time series data.
+```{r}
+fit2 <- ets(y.trn, model = "ANN", alpha = 0.1)
+plot(y.trn)
+lines(fit2$fitted,col="blue")
+```
 
-### Level_B -Time Series {style="color: blue"}
+```{r}
+fit1$mse
+```
 
-#### Load Data {style="color: grey"}
+```{r}
+fit2$mse
+```
+
+#### 4.2 Forecasting
+
+```{r}
+frc1 <- forecast(fit1, h=12)
+print(frc1)
+```
+
+```{r}
+plot(frc1)
+```
+
+```{r}
+plot(frc1)
+lines(fit1$fitted,col="red")
+```
+
+```{r}
+names(frc1)
+```
+
+```{r}
+frc2 <- forecast(fit2,h=12) # Store the forecasts
+plot(frc1)
+lines(fit1$fitted,col="blue")
+lines(frc2$mean,col="red")
+lines(fit2$fitted,col="red")
+lines(frc2$lower[,2],col="red") # 95% lower
+lines(frc2$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2) 
+# Add legend to the plot
+legend("topleft",c("Forecast 1","Forecast 2"),col=c("blue","red"),lty=1)
+```
+
+```{r}
+MAE1 <- mean(abs(y.tst - frc1$mean))
+MAE2 <- mean(abs(y.tst - frc2$mean))
+MAE <- c(MAE1, MAE2) 
+names(MAE) <- paste0("Forecast ",1:2) 
+round(MAE,3)
+```
+
+#### 4.3 Model selection
+
+```{r}
+fit3 <- ets(y.trn, model= "AAA", damped=TRUE)
+frc3 <- forecast(fit3,h=12)
+print(fit3)
+```
+
+```{r}
+plot(frc1)
+lines(fit1$fitted,col="blue")
+lines(frc3$mean,col="red",lwd=2) # lwd=2 makes the line thicker
+lines(fit3$fitted,col="red")
+lines(frc3$upper[,2],col="red")
+lines(frc3$lower[,2],col="red")
+lines(y.tst,lty=2)
+legend("topleft",c("Forecast 1","Forecast 3"),col=c("blue","red"),lty=1)
+```
+
+```{r}
+MAE3 <- mean(abs(y.tst - frc3$mean))
+round(MAE3,3)
+```
+
+```{r}
+round(MAE,3)
+```
+
+```{r}
+MSE1 <- mean((y.tst - frc1$mean)^2)
+MSE2 <- mean((y.tst - frc2$mean)^2)
+MSE3 <- mean((y.tst - frc3$mean)^2)
+MSE <- c(MSE1, MSE2, MSE3) 
+RMSE <- sqrt(MSE) 
+names(RMSE) <- paste0("Forecast ",1:3) 
+round(RMSE,3)
+```
+
+```{r}
+crit <- array(NA,c(3,3))
+print(crit)
+```
+
+```{r}
+crit <- array(NA,c(3,3),dimnames=list(c("Forecast 1", "Forecast 2", "Forecast 3"),
+c("AIC","AICc","BIC"))) # I can split lines!
+print(crit)
+```
+
+```{r}
+models <- list(fit1, fit2, fit3)
+
+for (i in 1:3) {
+  crit[i, "AIC"] <- models[[i]]$aic
+  crit[i, "AICc"] <- models[[i]]$aicc
+  crit[i, "BIC"] <- models[[i]]$bic
+}
+
+print(crit)
+```
+
+```{r}
+fit4 <- ets(y.trn)
+print(fit4)
+```
+
+# Exercise 
+
+"To enhance both conciseness and clarity within this report, the subsequent sections will adopt the following terminology conventions in the forthcoming code:
+
+1\. "fit_a" will be employed when specifying an ANN model with automatic alpha selection.
+
+2\. "fit_u" will be utilized when denoting an ANN model with an explicitly specified upper alpha value.
+
+3\. "fit_l" will be employed when delineating an ANN model with a specifically defined lower alpha value.
+
+Moreover, these identical nomenclature conventions will be consistently applied to the forecasting variable, which will uniformly be denoted as "frc" in all relevant code sections."
+
+## Level B
+
+### 1. Loading Data
 
 ```{r}
 y <- Y[,2]
-print(y)
+# Transform it into a time series
+y <- ts(y,frequency=12)
 ```
 
-```{r}
-y <- ts(y,frequency=12,end=c(2018,11))
-print(y)
-```
-
-```{r}
-plot(y)
-```
-
-#### Constructing estimation and hold-out sets {style="color: grey"}
+### 2. Constructing estimation and hold-out sets
 
 ```{r}
 y.tst <- tail(y,12)
 y.trn <- head(y,48)
 ```
 
-#### Exploration {style="color: grey"}
-
-```{r}
-cma <- cmav(y.trn,outplot=1) # The argument outplot produces a plot
-```
-
-```{r}
-print(cma)
-```
-
-```{r}
-seasplot(y.trn)
-```
-
-```{r}
-seasplot(y.trn,outplot=2)
-```
-
-```{r}
-seasplot(y.trn,outplot=3)
-```
-
-```{r}
-seasplot(y.trn,outplot=4)
-```
-
-```{r}
-dc <- decomp(y.trn,outplot=1)
-```
-
-#### Observation {style="color: black"}
-
--   **Trend Analysis:** Statistically, there appears to be evidence of a trend within the data. However, it is important to note that the visualization graphs do not unequivocally confirm the presence of this trend, warranting further investigation.
-
--   **Seasonality Assessment:** Conversely, Statistical analysis fails to detect any significant seasonality within the dataset. This finding is corroborated by the visualization graph, which illustrates the absence of repetitive patterns typically indicative of seasonality.
-
--   **Conclusion:** In summary, while there is some statistical indication of a trend, it is not definitively supported by the visualization graphs. Additionally, there is a clear absence of seasonality within this time series data.
-
-### LevelShift - Time Series {style="color: blue"}
-
-#### Load Data {style="color: grey"}
-
-```{r}
-y <- Y[,3]
-print(y)
-```
-
-```{r}
-y <- ts(y,frequency=12,end=c(2018,11))
-# The syntax of end is c(Year,Month), or more generally
-# c(season,seasonal period).
-print(y)
-```
-
-```{r}
-plot(y)
-```
-
-#### Constructing estimation and hold-out sets {style="color: grey"}
-
-```{r}
-y.tst <- tail(y,12)
-y.trn <- head(y,48)
-```
-
-#### Exploration {style="color: grey"}
+### 3. Exploration
 
 ```{r}
 cma <- cmav(y.trn,outplot=1)
 ```
 
 ```{r}
-print(cma)
-```
-
-```{r}
 seasplot(y.trn)
 ```
 
-```{r}
-seasplot(y.trn,outplot=2)
-```
-
-```{r}
-seasplot(y.trn,outplot=3)
-```
-
-```{r}
-seasplot(y.trn,outplot=4)
-```
-
-```{r}
-dc <- decomp(y.trn,outplot=1)
-```
-
-#### Observation {style="color: black"}
-
-**Trend Analysis:** Statistical assessment unequivocally identifies the presence of a discernible trend within the dataset. This finding is further validated by the visualization graph, which unmistakably portrays the existence of a trend.
-
-**Seasonality Evaluation:** In stark contrast, rigorous statistical analysis fails to detect any significant seasonality within the dataset. This outcome is in alignment with the visualization graph, which provides compelling evidence of the absence of repetitive patterns indicative of seasonality.
-
-**Conclusion:** In summary, analysis conclusively asserts the existence of a trend while simultaneously discounting the presence of seasonality within this time series data.
-
-### Trend_A - Time Series {style="color: blue"}
-
-#### Load Data {style="color: grey"}
-
-```{r}
-y <- Y[,4]
-print(y)
-```
-
-```{r}
-y <- ts(y,frequency=12,end=c(2018,11))
-print(y)
-```
-
-```{r}
-plot(y)
-```
-
-#### Constructing estimation and hold-out sets {style="color: grey"}
-
-```{r}
-y.tst <- tail(y,12)
-y.trn <- head(y,48)
-```
-
-#### Exploration {style="color: grey"}
-
-```{r}
-cma <- cmav(y.trn,outplot=1)
-```
-
-```{r}
-print(cma)
-```
-
-```{r}
-seasplot(y.trn)
-```
-
-```{r}
-seasplot(y.trn,outplot=2)
-```
-
-```{r}
-seasplot(y.trn,outplot=3)
-```
-
-```{r}
-seasplot(y.trn,outplot=4)
-```
-
-```{r}
-dc <- decomp(y.trn,outplot=1)
-```
-
-#### Observation {style="color: black"}
-
--   **Trend Analysis:** The statistical analysis conducted indicates the presence of a discernible trend within the dataset, a conclusion further supported by the visualization graphs.
-
--   **Seasonality Assessment:** Conversely, the statistical examination unequivocally affirms the absence of significant seasonality within the dataset. This observation aligns with the visualization graphs, which lack repetitive patterns indicative of seasonality.
-
--   **Conclusion:** In summary, the analysis confirms the existence of a trend while conclusively ruling out the presence of seasonality within this time series data.
-
-### Trend_B - Time Series {style="color: blue"}
-
-#### Load Data {style="color: grey"}
-
-```{r}
-y <- Y[,5]
-print(y)
-```
-
-```{r}
-y <- ts(y,frequency=12,end=c(2018,11))
-print(y)
-```
-
-```{r}
-plot(y)
-```
-
-#### Constructing estimation and hold-out sets {style="color: grey"}
-
-```{r}
-y.tst <- tail(y,12)
-y.trn <- head(y,48)
-```
-
-#### Exploration {style="color: grey"}
-
-```{r}
-cma <- cmav(y.trn,outplot=1)
-```
-
-```{r}
-print(cma)
-```
-
-```{r}
-seasplot(y.trn)
-```
-
-```{r}
-seasplot(y.trn,outplot=2)
-```
-
-```{r}
-seasplot(y.trn,outplot=3)
-```
-
-```{r}
-seasplot(y.trn,outplot=4)
-```
-
-```{r}
-dc <- decomp(y.trn,outplot=1)
-```
-
-#### Observation {style="color: black"}
-
--   **Trend Analysis:** Through a meticulous examination of the data, it is evident that a discernible trend exists, a conclusion supported by the visualization graphs.
-
--   **Seasonality Assessment:** Conversely, the analysis conducted demonstrates the absence of significant seasonality within the dataset. This determination aligns with the visual evidence presented in the graphs, which notably lack any recurring patterns indicative of seasonality.
-
--   **Conclusion:** In summary, the analysis affirms the presence of a trend while simultaneously discounting the presence of seasonality within this time series data.
-
-### Season_A - Time Series {style="color: blue"}
-
-#### Load Data {style="color: grey"}
-
-```{r}
-y <- Y[,6]
-print(y)
-```
-
-```{r}
-y <- ts(y,frequency=12,end=c(2018,11))
-print(y)
-```
-
-```{r}
-plot(y)
-```
+### 4. Forecasting
 
-#### Constructing estimation and hold-out sets {style="color: grey"}
+#### 4.1 Model fitting
 
 ```{r}
-y.tst <- tail(y,12)
-y.trn <- head(y,48)
+# Automatic Alpha ANN
+fit_a <- ets(y.trn,model="ANN")
+print(fit_a)
 ```
 
-#### Exploration {style="color: grey"}
-
-```{r}
-cma <- cmav(y.trn,outplot=1)
-```
-
-```{r}
-print(cma)
-```
-
-```{r}
-seasplot(y.trn)
-```
-
-```{r}
-seasplot(y.trn,outplot=2)
-```
-
-`{seasplot(y.trn,outplot=3)}`
-
-```{r}
-seasplot(y.trn,outplot=4)
-```
-
-```{r}
-dc <- decomp(y.trn,outplot=1)
-```
-
-#### Observation {style="color: black"}
-
--   **Trend Analysis:** The static analysis suggests the presence of a trend in the data, but this observation is not corroborated by the visual examination, as the graphs do not display any clear trend.
-
--   **Seasonality Assessment:** Both the static analysis and visual inspection indicate the presence of seasonality in the dataset, confirming the recurring patterns associated with seasonality.
-
--   **Conclusion:** In summary, the dataset exhibits seasonality, while a discernible trend is not apparent within the time series data.
-
-### Season_B - Time Series {style="color: blue"}
-
-#### Load Data {style="color: grey"}
-
-```{r}
-y <- Y[,7]
-print(y)
-```
-
-```{r}
-y <- ts(y,frequency=12,end=c(2018,11))
-print(y)
-```
-
-```{r}
-plot(y)
-```
-
-#### Constructing estimation and hold-out sets {style="color: grey"}
-
-```{r}
-y.tst <- tail(y,12)
-y.trn <- head(y,48)
-```
-
-#### Exploration {style="color: grey"}
-
-```{r}
-cma <- cmav(y.trn,outplot=1)
-```
-
-```{r}
-print(cma)
-```
-
-```{r}
-seasplot(y.trn)
-```
-
-```{r}
-seasplot(y.trn,outplot=2)
-```
-
-```{r}
-seasplot(y.trn,outplot=3)
-```
-
-```{r}
-seasplot(y.trn,outplot=4)
-```
-
-```{r}
-dc <- decomp(y.trn,outplot=1)
-```
-
-#### Observation {style="color: black"}
-
--   **Trend Analysis:** Both the static analysis and visual examination do not show any evidence of a trend in the data. There is no discernible trend statically or visually.
-
--   **Seasonality Assessment:** Conversely, both the static analysis and visual inspection confirm the presence of seasonality within the dataset, with clear recurring patterns evident both statistically and visually.
-
--   **Conclusion:** In summary, the dataset reveals the presence of seasonality while lacking a discernible trend within the time series data.
-
-### TrendSeason - Time Series {style="color: blue"}
-
-#### Load Data {style="color: grey"}
-
 ```{r}
-y <- Y[,8]
-print(y)
+# Upper Alpha ANN
+fit_u <- ets(y.trn,model="ANN", alpha = 0.08 )
+print(fit_u)
 ```
 
 ```{r}
-y <- ts(y,frequency=12,end=c(2018,11))
-print(y)
+# Lower Alpha ANN
+fit_l <- ets(y.trn,model="ANN", alpha = 0.02 )
+print(fit_l)
 ```
 
 ```{r}
-plot(y)
-```
+cirt <- array(NA, c(3, 3), dimnames = list(c("Automatic", "Upper", "Lower"),
+                                         c("MSE", "AIC", "AICc","BIC")))
 
-#### Constructing estimation and hold-out sets {style="color: grey"}
-
-```{r}
-y.tst <- tail(y,12)
-y.trn <- head(y,48)
-```
+models <- list(fit1, fit2, fit3)
 
-#### Exploration {style="color: grey"}
+for (i in 1:3) {
+  # Use 'cirt' instead of 'crit' for assignment
+  cirt[i, "MSE"] <- models[[i]]$mse
+  cirt[i, "AIC"] <- models[[i]]$aic
+  cirt[i, "AICc"] <- models[[i]]$aicc
+  cirt[i, "BIC"] <- models[[i]]$bic
+}
 
-```{r}
-cma <- cmav(y.trn,outplot=1)
+print(cirt)
 ```
 
-```{r}
-print(cma)
-```
+#### 4.2 Forecasting
 
-```{r}
-seasplot(y.trn)
-```
+-   Forecast ANN
 
 ```{r}
-seasplot(y.trn,outplot=2)
+# ploting Automatic ANN
+frc_a <- forecast(fit_a, h=12)
+plot(frc1, main = "Forcast Automatic ANN")
+lines(fit1$fitted,col="blue")
 ```
 
-```{r}
-seasplot(y.trn,outplot=3)
-```
+-   Forecast ANN and Upper Alpha
 
 ```{r}
-seasplot(y.trn,outplot=4)
-```
+# ploting Upper vs ANN
+frc_u <- forecast(fit2,h=12)
+plot(frc_a, main = "Forcast ANN, Automatic vs Upper Alpha")
+lines(fit_a$fitted,col="blue")
+lines(frc_u$mean,col="red")
+lines(fit_u$fitted,col="red")
+lines(frc_u$lower[,2],col="red") # 95% lower
+lines(frc_u$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2) 
 
-```{r}
-dc <- decomp(y.trn,outplot=1)
+# legends
+legend("topleft",c("ANN Automatic","ANN Upper Alpha"),col=c("blue","red"),lty=1)
 ```
-
-#### Observation {style="color: black"}
 
-**Trend Analysis:** Both the static analysis and visual examination reveal the presence of a discernible trend in the data, with clear evidence of a trend both statistically and visually.
+-   Forecast ANN and Lower Alpha
 
-**Seasonality Assessment:** Similarly, both the static analysis and visual inspection confirm the presence of seasonality within the dataset, with recurring patterns evident both statistically and visually.
-
-**Conclusion:** In conclusion, the dataset unmistakably demonstrates the presence of both a discernible trend and seasonality, indicating significant temporal patterns within the time series data.
-
-### Does your understanding of the plots agree with the underlying model? {style="color: green"}
-
-::: {style="color: black"}
-Upon careful examination of the provided time series analyses, it is evident that there may be occasional disparities in the interpretation of trends and seasonality between the statistical results derived from the model and the visual examination.
-
-While the model provides a statistical perspective, the visual examination offers an additional layer of insight. These differences in interpretation are duly recognized, and the conclusions drawn in each analysis take into consideration both the statistical results and the visual evidence presented in the plots.
-
-In response to the question, it can be stated that there is a degree of agreement between the understanding derived from the plots and the underlying model's analysis. However, it is also important to acknowledge that the agreement is not absolute, and the conclusions consider the insights from both sources to provide a comprehensive assessment of the data's trends and seasonality.
-:::
-
-### Does decomp() know when to remove the trend or the seasonality? {style="color: green"}
-
-::: {style="color: black"}
-The decomp()function, as with similar decomposition methods, doesn't make automatic decisions about removing trend or seasonality. Users need to specify the decomposition method and choose whether to keep or eliminate these components based on their specific analysis goals and the nature of the data they are working with.
-:::
-
-### AirPassengers - Time Series {style="color: blue"}
-
-#### Load Data {style="color: grey"}
-
-```{r}
-y <- AirPassengers
-print(y)
-```
-
 ```{r}
-plot(y)
-```
+# Ploting Lower vs ANN
+frc_l <- forecast(fit_l,h=12)
+plot(frc_a)
+lines(fit_a$fitted,col="blue")
+lines(frc_l$mean,col="red")
+lines(fit_l$fitted,col="red")
+lines(frc_l$lower[,2],col="red") # 95% lower
+lines(frc_l$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2) 
 
-#### Constructing estimation and hold-out sets {style="color: grey"}
-
-```{r}
-y.tst <- tail(y,29)
-y.trn <- head(y,115)
+# Add legend to the plot
+legend("topleft",c("ANN Automatic","ANN Lower Alpha"),col=c("blue","red"),lty=1)
 ```
 
-#### Exploration {style="color: grey"}
+-   Forecast ANN, Upper Alpha and Lower Alpha
 
-```{r}
-cma <- cmav(y.trn,outplot=1)
-```
-
-```{r}
-print(cma)
-```
+#### 4.3 Model selection
 
 ```{r}
-seasplot(y.trn)
-```
+# Mean Absolute Error
+MAE_a <- mean(abs(y.tst - frc_a$mean))
+MAE_u <- mean(abs(y.tst - frc_u$mean))
+MAE_u <- mean(abs(y.tst - frc_u$mean))
 
-```{r}
-seasplot(y.trn,outplot=2)
-```
+#Mean Square Error
+MSE_a <- mean((y.tst - frc_a$mean)^2)
+MSE_u <- mean((y.tst - frc_u$mean)^2)
+MSE_l <- mean((y.tst - frc_l$mean)^2)
 
-```{r}
-seasplot(y.trn,outplot=3)
+# Root Mean Square Error
+RMSE_a <- sqrt(MSE_a)
+RMSE_u <- sqrt(MSE_u)
+RMSE_l <- sqrt(MSE_l)
 ```
 
 ```{r}
-seasplot(y.trn,outplot=4)
-```
 
-```{r}
-dc <- decomp(y.trn,outplot=1)
 ```
 
-#### Observation {style="color: black"}
+### Answers
 
--   **Trend Analysis:** Both the static analysis and visual examination distinctly indicate the presence of an additive trend in the data, with clear evidence of a trend both statistically and visually.
+-   Which one is best using your judgement?
 
--   **Seasonality Assessment:** Similarly, both the static analysis and visual inspection consistently confirm the presence of seasonality within the dataset, with recurring patterns evident both statistically and visually.
+-   Which one is best using errors?
 
--   **Conclusion:** In summary, the data unequivocally exhibits both a discernible additive trend and seasonality, as supported by both static analysis and visual examination of this time series data.
+-   Does the selected model perform best in the out-of-sample data?
