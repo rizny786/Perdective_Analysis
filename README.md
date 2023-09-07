@@ -4,7 +4,7 @@ This repository contains R Markdown notebooks (`.Rmd`) 1 to 6, which are the sol
 
 ## Notebooks
 
-1.  [Exploration](Notebooks/explorations.rmd)
+1.  [Exploration](Notebooks/explorations.Rmd)
 2.  [ETS ANN](Notebooks/ann_models.rmd)
 3.  [Notebook 3](Notebooks/notebook3.rmd)
 4.  [Notebook 4](Notebooks/notebook4.rmd)
