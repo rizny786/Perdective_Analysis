@@ -2,13 +2,18 @@
 title: "Assignment 2"
 author: "Rizny Mubarak"
 date: "2023-09-05"
-output: pdf_document
+output: 
+  pdf_document: 
+    toc: yes
+    toc_depth: 5
+    number_sections: yes
 ---
 
 ```{r}
 # Load necessary libraries
 library(forecast)
 library(tsutils)
+library(ggplot2)
 ```
 
 ## Level A
@@ -197,15 +202,13 @@ fit4 <- ets(y.trn)
 print(fit4)
 ```
 
-# Exercise 
+# Exercise
 
 "To enhance both conciseness and clarity within this report, the subsequent sections will adopt the following terminology conventions in the forthcoming code:
 
-1\. "fit_a" will be employed when specifying an ANN model with automatic alpha selection.
+1\. "fit" will be employed when specifying an ANN model with automatic alpha selection.
 
-2\. "fit_u" will be utilized when denoting an ANN model with an explicitly specified upper alpha value.
-
-3\. "fit_l" will be employed when delineating an ANN model with a specifically defined lower alpha value.
+2\. "fit_m1", "fit_m2" will be utilized when denoting an ANN model with an explicitly specified alpha value.
 
 Moreover, these identical nomenclature conventions will be consistently applied to the forecasting variable, which will uniformly be denoted as "frc" in all relevant code sections."
 
@@ -242,30 +245,29 @@ seasplot(y.trn)
 
 ```{r}
 # Automatic Alpha ANN
-fit_a <- ets(y.trn,model="ANN")
-print(fit_a)
+fit <- ets(y.trn,model="ANN")
+print(fit)
 ```
 
 ```{r}
-# Upper Alpha ANN
-fit_u <- ets(y.trn,model="ANN", alpha = 0.08 )
-print(fit_u)
+# Alpha ANN
+fit_m1 <- ets(y.trn,model="ANN", alpha = 0.08 )
+print(fit)
 ```
 
 ```{r}
-# Lower Alpha ANN
-fit_l <- ets(y.trn,model="ANN", alpha = 0.02 )
-print(fit_l)
+# Alpha M2 ANN
+fit_m2 <- ets(y.trn,model="ANN", alpha = 0.02 )
+print(fit_m2)
 ```
 
 ```{r}
-cirt <- array(NA, c(3, 3), dimnames = list(c("Automatic", "Upper", "Lower"),
+cirt <- array(NA, c(3, 4), dimnames = list(c("Automatic", "M1", "M2"),
                                          c("MSE", "AIC", "AICc","BIC")))
 
-models <- list(fit1, fit2, fit3)
+models <- list(fit, fit_m1, fit_m2)
 
 for (i in 1:3) {
-  # Use 'cirt' instead of 'crit' for assignment
   cirt[i, "MSE"] <- models[[i]]$mse
   cirt[i, "AIC"] <- models[[i]]$aic
   cirt[i, "AICc"] <- models[[i]]$aicc
@@ -281,74 +283,1582 @@ print(cirt)
 
 ```{r}
 # ploting Automatic ANN
-frc_a <- forecast(fit_a, h=12)
-plot(frc1, main = "Forcast Automatic ANN")
-lines(fit1$fitted,col="blue")
+frc <- forecast(fit, h=12)
+plot(frc, main = "Forcast Automatic ANN")
+lines(fit$fitted,col="green")
 ```
 
--   Forecast ANN and Upper Alpha
+-   Forecast ANN and Alpha M1
 
 ```{r}
-# ploting Upper vs ANN
-frc_u <- forecast(fit2,h=12)
-plot(frc_a, main = "Forcast ANN, Automatic vs Upper Alpha")
-lines(fit_a$fitted,col="blue")
-lines(frc_u$mean,col="red")
-lines(fit_u$fitted,col="red")
-lines(frc_u$lower[,2],col="red") # 95% lower
-lines(frc_u$upper[,2],col="red") # 95% upper
+# ploting M1 vs ANN
+frc_m1 <- forecast(fit_m1,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M1")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red") # 95% upper
 lines(y.tst,lty=2) 
 
 # legends
-legend("topleft",c("ANN Automatic","ANN Upper Alpha"),col=c("blue","red"),lty=1)
+legend("topleft",c("Automatic","M1"),col=c("green","red"),lty=1)
 ```
 
--   Forecast ANN and Lower Alpha
+-   Forecast ANN and Alpha M2
 
 ```{r}
-# Ploting Lower vs ANN
-frc_l <- forecast(fit_l,h=12)
-plot(frc_a)
-lines(fit_a$fitted,col="blue")
-lines(frc_l$mean,col="red")
-lines(fit_l$fitted,col="red")
-lines(frc_l$lower[,2],col="red") # 95% lower
-lines(frc_l$upper[,2],col="red") # 95% upper
+# Ploting M2 vs ANN
+frc_m2 <- forecast(fit_m2,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M2")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m2$fitted,col="yellow")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
 lines(y.tst,lty=2) 
 
 # Add legend to the plot
-legend("topleft",c("ANN Automatic","ANN Lower Alpha"),col=c("blue","red"),lty=1)
+legend("topleft",c("Automatic","M2"),col=c("green","yellow"),lty=1)
 ```
 
--   Forecast ANN, Upper Alpha and Lower Alpha
+-   Confidence level ANN, Alpha M1 and Alpha M2
+
+```{r}
+# Ploting confidence level of all 3
+plot(frc, main = "Confidnece Level")
+lines(frc$mean,col="green")
+
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+
+# Add legend to the plot
+legend("topleft",c("Automatic","upper","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+```{r}
+plot(frc, main = "Forcast ANN, Automatic, M1 and Alpha M2")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+lines(fit_m2$fitted,col="yellow")
+legend("topleft",c("Automatic","upper","M2"),col=c("green","red","yellow"),lty=1)
+```
 
 #### 4.3 Model selection
 
 ```{r}
-# Mean Absolute Error
-MAE_a <- mean(abs(y.tst - frc_a$mean))
-MAE_u <- mean(abs(y.tst - frc_u$mean))
-MAE_u <- mean(abs(y.tst - frc_u$mean))
+# Function to calculate metrics
+calculate_metrics <- function(y, frc) {
+  MAE <- mean(abs(y - frc$mean))
+  MSE <- mean((y - frc$mean)^2)
+  RMSE <- sqrt(MSE)
+  return(list(MAE = MAE, MSE = MSE, RMSE = RMSE))
+}
 
-#Mean Square Error
-MSE_a <- mean((y.tst - frc_a$mean)^2)
-MSE_u <- mean((y.tst - frc_u$mean)^2)
-MSE_l <- mean((y.tst - frc_l$mean)^2)
+# Calculate metrics for different forecasts
+metrics_a <- calculate_metrics(y.tst, frc)
+metrics_m1 <- calculate_metrics(y.tst, frc_m1)
+metrics_m2 <- calculate_metrics(y.tst, frc_m2)
 
-# Root Mean Square Error
-RMSE_a <- sqrt(MSE_a)
-RMSE_u <- sqrt(MSE_u)
-RMSE_l <- sqrt(MSE_l)
+# Create a matrix for the metrics
+metrics_matrix <- matrix(c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+                           metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE,
+                          metrics_a$MSE, metrics_m1$MSE, metrics_m2$MSE),
+                          ncol = 3, byrow = TRUE)
+
+# Add row and column names
+rownames(metrics_matrix) <- c("MAE", "MSE", "RMSE")
+colnames(metrics_matrix) <- c("Automatic", "Alpha M1", "Alpha M2")
+
+# Display the metrics matrix
+metrics_matrix
+
 ```
 
 ```{r}
+# Create a data frame from the metrics matrix, excluding MSE
+metrics_df <- data.frame(
+  Metric = rep(c("MAE", "RMSE"), each = 3),
+  Value = c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+            metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE),
+  Forecast = rep(c("Automatic", "Alpha M1", "Alpha M2"), times = 2)
+)
+metrics_df$Forecast <- factor(metrics_df$Forecast, levels = c("Automatic", "Alpha M1", "Alpha M2"))
+
+# Create a bar plot
+ggplot(metrics_df, aes(x = Forecast, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "MAE and RMSE Comparison",
+       y = "Metric Value") +
+  theme_minimal()
 
 ```
 
-### Answers
+### 5. Answers
 
 -   Which one is best using your judgement?
 
+    Based on an evaluation of the in-sample data, it is observed that the **Automatic** model has performed commendably. This model effectively filters out noise and outliers, resulting in a smoother representation of the underlying level. Conversely, the M2 model, while smoothing out a significant amount of noise and outliers, may not fully capture the nuances of the level. The upper model, although not consistently following the level, provides an alternative perspective
+
 -   Which one is best using errors?
 
+    In terms of error metrics such as AIC, MSE, RMSE, and others, it is notable that the **M2** model yields the lowest errors. Despite its occasional deviations from the level, its overall predictive accuracy, as indicated by the error metrics, is superior to the other models.
+
 -   Does the selected model perform best in the out-of-sample data?
+
+    Contrary to the in-sample results, the out-of-sample data analysis reveals that the selected model may not be the optimal choice. In this context, the **M1**model demonstrates superior performance, as it yields the lowest RMSE and MAE values. This suggests that the upper model might generalize better to unseen data points, capturing the underlying patterns more effectively.
+
+## LevelShift
+
+### 1. Loading Data
+
+```{r}
+y <- Y[,3]
+# Transform it into a time series
+y <- ts(y,frequency=12)
+```
+
+### 2. Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+### 3. Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+### 4. Forecasting
+
+#### 4.1 Model fitting
+
+```{r}
+# Automatic Alpha ANN
+fit <- ets(y.trn,model="ANN")
+print(fit)
+```
+
+```{r}
+# Alpha M1 ANN
+fit_m1 <- ets(y.trn,model="ANN", alpha = 0.8 )
+print(fit_m1)
+```
+
+```{r}
+# Alpha M2 ANN
+fit_m2 <- ets(y.trn,model="ANN", alpha = 0.4 )
+print(fit_m2)
+```
+
+```{r}
+cirt <- array(NA, c(3, 4), dimnames = list(c("Automatic", "M1", "M2"),
+                                         c("MSE", "AIC", "AICc","BIC")))
+
+models <- list(fit, fit_m1, fit_m2)
+
+for (i in 1:3) {
+  cirt[i, "MSE"] <- models[[i]]$mse
+  cirt[i, "AIC"] <- models[[i]]$aic
+  cirt[i, "AICc"] <- models[[i]]$aicc
+  cirt[i, "BIC"] <- models[[i]]$bic
+}
+
+print(cirt)
+```
+
+#### 4.2 Forecasting
+
+-   Forecast ANN
+
+```{r}
+# ploting Automatic ANN
+frc <- forecast(fit, h=12)
+plot(frc, main = "Forcast Automatic ANN")
+lines(fit$fitted,col="green")
+```
+
+-   Forecast ANN and Alpha M1
+
+```{r}
+# ploting M1 vs ANN
+frc_m1 <- forecast(fit_m1,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M1")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2)
+
+# legends
+legend("topleft",c("Automatic","M1"),col=c("green","red"),lty=1)
+```
+
+-   Forecast ANN and Alpha M2
+
+```{r}
+# Ploting M2 vs ANN
+frc_m2 <- forecast(fit_m2,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M2")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m2$fitted,col="yellow")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+lines(y.tst,lty=2) 
+
+# Add legend to the plot
+legend("topleft",c("Automatic","Alpha M2"),col=c("green","yellow"),lty=1)
+```
+
+-   Confidence level ANN, Alpha M1 and Alpha M2
+
+```{r}
+# Ploting confidence level of all 3
+plot(frc, main = "Confidnece Level")
+lines(frc$mean,col="green")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+
+# Add legend to the plot
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+```{r}
+plot(frc, main = "Forcast ANN, Automatic, M1 and Alpha M2")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+lines(fit_m2$fitted,col="yellow")
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+#### 4.3 Model selection
+
+```{r}
+# Function to calculate metrics
+calculate_metrics <- function(y, frc) {
+  MAE <- mean(abs(y - frc$mean))
+  MSE <- mean((y - frc$mean)^2)
+  RMSE <- sqrt(MSE)
+  return(list(MAE = MAE, MSE = MSE, RMSE = RMSE))
+}
+
+# Calculate metrics for different forecasts
+metrics_a <- calculate_metrics(y.tst, frc)
+metrics_m1 <- calculate_metrics(y.tst, frc_m1)
+metrics_m2 <- calculate_metrics(y.tst, frc_m2)
+
+# Create a matrix for the metrics
+metrics_matrix <- matrix(c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+                           metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE,
+                          metrics_a$MSE, metrics_m1$MSE, metrics_m2$MSE),
+                          ncol = 3, byrow = TRUE)
+
+# Add row and column names
+rownames(metrics_matrix) <- c("MAE", "MSE", "RMSE")
+colnames(metrics_matrix) <- c("Automatic", "Alpha M1", "Alpha M2")
+
+# Display the metrics matrix
+metrics_matrix
+
+```
+
+```{r}
+# Create a data frame from the metrics matrix, excluding MSE
+metrics_df <- data.frame(
+  Metric = rep(c("MAE", "RMSE"), each = 3),
+  Value = c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+            metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE),
+  Forecast = rep(c("Automatic", "Alpha M1", "Alpha M2"), times = 2)
+)
+metrics_df$Forecast <- factor(metrics_df$Forecast, levels = c("Automatic", "Alpha M1", "Alpha M2"))
+
+# Create a bar plot
+ggplot(metrics_df, aes(x = Forecast, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "MAE and RMSE Comparison",
+       y = "Metric Value") +
+  theme_minimal()
+
+```
+
+### 5. Answers
+
+-   Which one is best using your judgement?
+
+    In assessing the performance of different models for the "LevelShift" component within the in-sample data, it is evident that the M2 model is the preferred choice. Despite exhibiting the ability to effectively follow the level and filter out noise and outliers, it is acknowledged that the M2 model does not yield optimal error metrics. However, prioritizing the ability to capture the level and mitigate noise appears to be paramount in this context. So **M2** model
+
+-   Which one is best using errors?
+
+    Analyzing error metrics, it is evident that the upper model consistently outperforms the other models in terms of AIC and other error measures, except for MSE, where it lags behind the M2 model. Despite the MSE difference, the **M1** model excels in most error aspects.
+
+-   Does the selected model perform best in the out-of-sample data?
+
+    Contrary to the in-sample findings, the out-of-sample analysis reveals that the selected model may not be the optimal choice for forecasting the "LevelShift" component. In this case, the automatic model outperforms others by yielding the best RMSE and MAE values, which are also in proximity to the mean. This suggests that, when considering out-of-sample performance, the **Automatic** model demonstrates better predictive accuracy.
+
+## Trend A
+
+### 1. Loading Data
+
+```{r}
+y <- Y[,4]
+# Transform it into a time series
+y <- ts(y,frequency=12)
+```
+
+### 2. Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+### 3. Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+### 4. Forecasting
+
+#### 4.1 Model fitting
+
+```{r}
+# Automatic Alpha ANN
+fit <- ets(y.trn,model="ANN")
+print(fit)
+```
+
+```{r}
+# Alpha M1 ANN
+fit_m1 <- ets(y.trn,model="ANN", alpha = 0.7 )
+print(fit_m1)
+```
+
+```{r}
+# Alpha M2 ANN
+fit_m2 <- ets(y.trn,model="ANN", alpha = 0.4 )
+print(fit_m2)
+```
+
+```{r}
+cirt <- array(NA, c(3, 4), dimnames = list(c("Automatic", "M1", "M2"),
+                                         c("MSE", "AIC", "AICc","BIC")))
+
+models <- list(fit, fit_m1, fit_m2)
+
+for (i in 1:3) {
+  cirt[i, "MSE"] <- models[[i]]$mse
+  cirt[i, "AIC"] <- models[[i]]$aic
+  cirt[i, "AICc"] <- models[[i]]$aicc
+  cirt[i, "BIC"] <- models[[i]]$bic
+}
+
+print(cirt)
+```
+
+#### 4.2 Forecasting
+
+-   Forecast ANN
+
+```{r}
+# ploting Automatic ANN
+frc <- forecast(fit, h=12)
+plot(frc, main = "Forcast Automatic ANN")
+lines(fit$fitted,col="green")
+```
+
+-   Forecast ANN and Alpha M1
+
+```{r}
+# ploting M1 vs ANN
+frc_m1 <- forecast(fit_m1,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M1")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2)
+
+# legends
+legend("topleft",c("Automatic","M1"),col=c("green","red"),lty=1)
+```
+
+-   Forecast ANN and Alpha M2
+
+```{r}
+# Ploting M2 vs ANN
+frc_m2 <- forecast(fit_m2,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M2")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m2$fitted,col="yellow")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+lines(y.tst,lty=2) 
+
+# Add legend to the plot
+legend("topleft",c("Automatic","Alpha M2"),col=c("green","yellow"),lty=1)
+```
+
+-   Confidence level ANN, Alpha M1 and Alpha M2
+
+```{r}
+# Ploting confidence level of all 3
+plot(frc, main = "Confidnece Level")
+lines(frc$mean,col="green")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+
+# Add legend to the plot
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+```{r}
+plot(frc, main = "Forcast ANN, Automatic, M1 and Alpha M2")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+lines(fit_m2$fitted,col="yellow")
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+#### 4.3 Model selection
+
+```{r}
+# Function to calculate metrics
+calculate_metrics <- function(y, frc) {
+  MAE <- mean(abs(y - frc$mean))
+  MSE <- mean((y - frc$mean)^2)
+  RMSE <- sqrt(MSE)
+  return(list(MAE = MAE, MSE = MSE, RMSE = RMSE))
+}
+
+# Calculate metrics for different forecasts
+metrics_a <- calculate_metrics(y.tst, frc)
+metrics_m1 <- calculate_metrics(y.tst, frc_m1)
+metrics_m2 <- calculate_metrics(y.tst, frc_m2)
+
+# Create a matrix for the metrics
+metrics_matrix <- matrix(c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+                           metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE,
+                          metrics_a$MSE, metrics_m1$MSE, metrics_m2$MSE),
+                          ncol = 3, byrow = TRUE)
+
+# Add row and column names
+rownames(metrics_matrix) <- c("MAE", "MSE", "RMSE")
+colnames(metrics_matrix) <- c("Automatic", "Alpha M1", "Alpha M2")
+
+# Display the metrics matrix
+metrics_matrix
+
+```
+
+```{r}
+# Create a data frame from the metrics matrix, excluding MSE
+metrics_df <- data.frame(
+  Metric = rep(c("MAE", "RMSE"), each = 3),
+  Value = c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+            metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE),
+  Forecast = rep(c("Automatic", "Alpha M1", "Alpha M2"), times = 2)
+)
+metrics_df$Forecast <- factor(metrics_df$Forecast, levels = c("Automatic", "Alpha M1", "Alpha M2"))
+
+# Create a bar plot
+ggplot(metrics_df, aes(x = Forecast, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "MAE and RMSE Comparison",
+       y = "Metric Value") +
+  theme_minimal()
+
+```
+
+### 5. Answers
+
+-   Which one is best using your judgement?
+
+    In evaluating different models for the "Trend_A" component within the in-sample data, it is noted that **Model M2** offers a good fit to the data. However, it falls short in terms of effectively filtering out noise and outliers, which could affect its suitability for certain applications. In contrast, the automatic model performs well in filtering out noise and outliers, emphasizing data robustness, although it might not achieve the best fit. Model M3, on the other hand, does not provide a satisfactory fitting to the data.
+
+-   Which one is best using errors?
+
+    The assessment of error metrics indicates that the **Automatic** model excels in minimizing MSE, suggesting that it provides the most accurate predictions for the "Trend_A" component. Conversely, **Model M1** stands out in terms of AIC error minimization. These observations underline the importance of considering multiple error metrics, as they may highlight different aspects of model performance.
+
+-   Does the selected model perform best in the out-of-sample data?
+
+    In the context of out-of-sample data, **Model M2** emerges as the preferred choice, as it exhibits the best RMSE and MAE values among the models considered. This suggests that Model M2 generalizes effectively to unseen data points for forecasting "Trend_A".
+
+## Trend B
+
+### 1. Loading Data
+
+```{r}
+y <- Y[,5]
+# Transform it into a time series
+y <- ts(y,frequency=12)
+```
+
+### 2. Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+### 3. Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+### 4. Forecasting
+
+#### 4.1 Model fitting
+
+```{r}
+# Automatic Alpha ANN
+fit <- ets(y.trn,model="ANN")
+print(fit)
+```
+
+```{r}
+# Alpha M1 ANN
+fit_m1 <- ets(y.trn,model="ANN", alpha = 0.6 )
+print(fit_m1)
+```
+
+```{r}
+# Alpha M2 ANN
+fit_m2 <- ets(y.trn,model="ANN", alpha = 0.3 )
+print(fit_m2)
+```
+
+```{r}
+cirt <- array(NA, c(3, 4), dimnames = list(c("Automatic", "M1", "M2"),
+                                         c("MSE", "AIC", "AICc","BIC")))
+
+models <- list(fit, fit_m1, fit_m2)
+
+for (i in 1:3) {
+  cirt[i, "MSE"] <- models[[i]]$mse
+  cirt[i, "AIC"] <- models[[i]]$aic
+  cirt[i, "AICc"] <- models[[i]]$aicc
+  cirt[i, "BIC"] <- models[[i]]$bic
+}
+
+print(cirt)
+```
+
+#### 4.2 Forecasting
+
+-   Forecast ANN
+
+```{r}
+# ploting Automatic ANN
+frc <- forecast(fit, h=12)
+plot(frc, main = "Forcast Automatic ANN")
+lines(fit$fitted,col="green")
+```
+
+-   Forecast ANN and Alpha M1
+
+```{r}
+# ploting M1 vs ANN
+frc_m1 <- forecast(fit_m1,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M1")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2)
+
+# legends
+legend("topleft",c("Automatic","M1"),col=c("green","red"),lty=1)
+```
+
+-   Forecast ANN and Alpha M2
+
+```{r}
+# Ploting M2 vs ANN
+frc_m2 <- forecast(fit_m2,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M2")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m2$fitted,col="yellow")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+lines(y.tst,lty=2) 
+
+# Add legend to the plot
+legend("topleft",c("Automatic","Alpha M2"),col=c("green","yellow"),lty=1)
+```
+
+-   Confidence level ANN, Alpha M1 and Alpha M2
+
+```{r}
+# Ploting confidence level of all 3
+plot(frc, main = "Confidnece Level")
+lines(frc$mean,col="green")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+
+# Add legend to the plot
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+```{r}
+plot(frc, main = "Forcast ANN, Automatic, M1 and Alpha M2")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+lines(fit_m2$fitted,col="yellow")
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+#### 4.3 Model selection
+
+```{r}
+# Function to calculate metrics
+calculate_metrics <- function(y, frc) {
+  MAE <- mean(abs(y - frc$mean))
+  MSE <- mean((y - frc$mean)^2)
+  RMSE <- sqrt(MSE)
+  return(list(MAE = MAE, MSE = MSE, RMSE = RMSE))
+}
+
+# Calculate metrics for different forecasts
+metrics_a <- calculate_metrics(y.tst, frc)
+metrics_m1 <- calculate_metrics(y.tst, frc_m1)
+metrics_m2 <- calculate_metrics(y.tst, frc_m2)
+
+# Create a matrix for the metrics
+metrics_matrix <- matrix(c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+                           metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE,
+                          metrics_a$MSE, metrics_m1$MSE, metrics_m2$MSE),
+                          ncol = 3, byrow = TRUE)
+
+# Add row and column names
+rownames(metrics_matrix) <- c("MAE", "MSE", "RMSE")
+colnames(metrics_matrix) <- c("Automatic", "Alpha M1", "Alpha M2")
+
+# Display the metrics matrix
+metrics_matrix
+
+```
+
+```{r}
+# Create a data frame from the metrics matrix, excluding MSE
+metrics_df <- data.frame(
+  Metric = rep(c("MAE", "RMSE"), each = 3),
+  Value = c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+            metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE),
+  Forecast = rep(c("Automatic", "Alpha M1", "Alpha M2"), times = 2)
+)
+metrics_df$Forecast <- factor(metrics_df$Forecast, levels = c("Automatic", "Alpha M1", "Alpha M2"))
+
+# Create a bar plot
+ggplot(metrics_df, aes(x = Forecast, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "MAE and RMSE Comparison",
+       y = "Metric Value") +
+  theme_minimal()
+
+```
+
+### 5. Answers
+
+-   Which one is best using your judgement?
+
+    In the context of modeling the "Trend_B" component within the in-sample data, it is observed that the **Automatic** model offers a good fit to the data. However, it does not effectively filter out noise and outliers. Considering this, the judgment leans toward the automatic model as the preferable choice.
+
+-   Which one is best using errors?
+
+    Both error metrics, MSE and AIC, indicate that the **Automatic** model performs the best among the considered models. This suggests that the automatic model provides the most accurate predictions for the "Trend_B" component within the in-sample data.
+
+-   Does the selected model perform best in the out-of-sample data?
+
+    In the out-of-sample analysis, the **automatic** model continues to demonstrate its superiority by yielding the best RMSE and MAE values. However, it is important to note that single exponential smoothing, such as the automatic model, may have limitations in modeling time series data with trends.
+
+    It is crucial to recognize that while the automatic model performs well in the current analysis, it may not be the final solution for modeling time series data with trends. More sophisticated models, such as those incorporating trend components explicitly, might be necessary for a more comprehensive modeling approach in certain cases.
+
+## Season A
+
+### 1. Loading Data
+
+```{r}
+y <- Y[,6]
+# Transform it into a time series
+y <- ts(y,frequency=12)
+```
+
+### 2. Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+### 3. Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+### 4. Forecasting
+
+#### 4.1 Model fitting
+
+```{r}
+# Automatic Alpha ANN
+fit <- ets(y.trn,model="ANN")
+print(fit)
+```
+
+```{r}
+# Alpha M1 ANN
+fit_m1 <- ets(y.trn,model="ANN", alpha = 0.7 )
+print(fit_m1)
+```
+
+```{r}
+# Alpha M2 ANN
+fit_m2 <- ets(y.trn,model="ANN", alpha = 0.4 )
+print(fit_m2)
+```
+
+```{r}
+cirt <- array(NA, c(3, 4), dimnames = list(c("Automatic", "M1", "M2"),
+                                         c("MSE", "AIC", "AICc","BIC")))
+
+models <- list(fit, fit_m1, fit_m2)
+
+for (i in 1:3) {
+  cirt[i, "MSE"] <- models[[i]]$mse
+  cirt[i, "AIC"] <- models[[i]]$aic
+  cirt[i, "AICc"] <- models[[i]]$aicc
+  cirt[i, "BIC"] <- models[[i]]$bic
+}
+
+print(cirt)
+```
+
+#### 4.2 Forecasting
+
+-   Forecast ANN
+
+```{r}
+# ploting Automatic ANN
+frc <- forecast(fit, h=12)
+plot(frc, main = "Forcast Automatic ANN")
+lines(fit$fitted,col="green")
+```
+
+-   Forecast ANN and Alpha M1
+
+```{r}
+# ploting M1 vs ANN
+frc_m1 <- forecast(fit_m1,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M1")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2)
+
+# legends
+legend("topleft",c("Automatic","M1"),col=c("green","red"),lty=1)
+```
+
+-   Forecast ANN and Alpha M2
+
+```{r}
+# Ploting M2 vs ANN
+frc_m2 <- forecast(fit_m2,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M2")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m2$fitted,col="yellow")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+lines(y.tst,lty=2) 
+
+# Add legend to the plot
+legend("topleft",c("Automatic","Alpha M2"),col=c("green","yellow"),lty=1)
+```
+
+-   Confidence level ANN, Alpha M1 and Alpha M2
+
+```{r}
+# Ploting confidence level of all 3
+plot(frc, main = "Confidnece Level")
+lines(frc$mean,col="green")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+
+# Add legend to the plot
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+```{r}
+plot(frc, main = "Forcast ANN, Automatic, M1 and Alpha M2")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+lines(fit_m2$fitted,col="yellow")
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+#### 4.3 Model selection
+
+```{r}
+# Function to calculate metrics
+calculate_metrics <- function(y, frc) {
+  MAE <- mean(abs(y - frc$mean))
+  MSE <- mean((y - frc$mean)^2)
+  RMSE <- sqrt(MSE)
+  return(list(MAE = MAE, MSE = MSE, RMSE = RMSE))
+}
+
+# Calculate metrics for different forecasts
+metrics_a <- calculate_metrics(y.tst, frc)
+metrics_m1 <- calculate_metrics(y.tst, frc_m1)
+metrics_m2 <- calculate_metrics(y.tst, frc_m2)
+
+# Create a matrix for the metrics
+metrics_matrix <- matrix(c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+                           metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE,
+                          metrics_a$MSE, metrics_m1$MSE, metrics_m2$MSE),
+                          ncol = 3, byrow = TRUE)
+
+# Add row and column names
+rownames(metrics_matrix) <- c("MAE", "MSE", "RMSE")
+colnames(metrics_matrix) <- c("Automatic", "Alpha M1", "Alpha M2")
+
+# Display the metrics matrix
+metrics_matrix
+
+```
+
+```{r}
+# Create a data frame from the metrics matrix, excluding MSE
+metrics_df <- data.frame(
+  Metric = rep(c("MAE", "RMSE"), each = 3),
+  Value = c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+            metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE),
+  Forecast = rep(c("Automatic", "Alpha M1", "Alpha M2"), times = 2)
+)
+metrics_df$Forecast <- factor(metrics_df$Forecast, levels = c("Automatic", "Alpha M1", "Alpha M2"))
+
+# Create a bar plot
+ggplot(metrics_df, aes(x = Forecast, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "MAE and RMSE Comparison",
+       y = "Metric Value") +
+  theme_minimal()
+
+```
+
+### 5. Answers
+
+-   Which one is best using your judgement?
+
+    In assessing the models for the "Season_A" component within the in-sample data, it is evident that the **Automatic** model captures seasonality effectively, which is a crucial aspect of the time series. However, it falls short in filtering out noise and outliers, indicating a potential drawback in terms of robustness. Model M1 fits the data well but with more noise and outliers, while Model M2 focuses on noise and outlier reduction but doesn't provide an ideal fit.
+
+-   Which one is best using errors?
+
+    Both error metrics, MSE and AIC, suggest that the **Automatic** model outperforms the other models in terms of error minimization. This indicates that the automatic model provides the most accurate predictions for the "Season_A" component within the in-sample data..
+
+-   Does the selected model perform best in the out-of-sample data?
+
+    The out-of-sample analysis reveals that the automatic model may not be the optimal choice, as it does not yield the best RMSE and MAE values. **Model M2** demonstrates superior performance in terms of these metrics.
+
+    It is crucial to acknowledge that while the automatic model captures seasonality effectively in the in-sample data, its performance may vary when applied to out-of-sample data. Model M2, despite its limited fitting capability, appears to generalize better to unseen data points for forecasting "Season_A."
+
+## Season B
+
+### 1. Loading Data
+
+```{r}
+y <- Y[,7]
+# Transform it into a time series
+y <- ts(y,frequency=12)
+```
+
+### 2. Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+### 3. Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+### 4. Forecasting
+
+#### 4.1 Model fitting
+
+```{r}
+# Automatic Alpha ANN
+fit <- ets(y.trn,model="ANN")
+print(fit)
+```
+
+```{r}
+# Alpha M1 ANN
+fit_m1 <- ets(y.trn,model="ANN", alpha = 0.7 )
+print(fit_m1)
+```
+
+```{r}
+# Alpha M2 ANN
+fit_m2 <- ets(y.trn,model="ANN", alpha = 0.4 )
+print(fit_m2)
+```
+
+```{r}
+cirt <- array(NA, c(3, 4), dimnames = list(c("Automatic", "M1", "M2"),
+                                         c("MSE", "AIC", "AICc","BIC")))
+
+models <- list(fit, fit_m1, fit_m2)
+
+for (i in 1:3) {
+  cirt[i, "MSE"] <- models[[i]]$mse
+  cirt[i, "AIC"] <- models[[i]]$aic
+  cirt[i, "AICc"] <- models[[i]]$aicc
+  cirt[i, "BIC"] <- models[[i]]$bic
+}
+
+print(cirt)
+```
+
+#### 4.2 Forecasting
+
+-   Forecast ANN
+
+```{r}
+# ploting Automatic ANN
+frc <- forecast(fit, h=12)
+plot(frc, main = "Forcast Automatic ANN")
+lines(fit$fitted,col="green")
+```
+
+-   Forecast ANN and Alpha M1
+
+```{r}
+# ploting M1 vs ANN
+frc_m1 <- forecast(fit_m1,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M1")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2)
+
+# legends
+legend("topleft",c("Automatic","M1"),col=c("green","red"),lty=1)
+```
+
+-   Forecast ANN and Alpha M2
+
+```{r}
+# Ploting M2 vs ANN
+frc_m2 <- forecast(fit_m2,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M2")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m2$fitted,col="yellow")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+lines(y.tst,lty=2) 
+
+# Add legend to the plot
+legend("topleft",c("Automatic","Alpha M2"),col=c("green","yellow"),lty=1)
+```
+
+-   Confidence level ANN, Alpha M1 and Alpha M2
+
+```{r}
+# Ploting confidence level of all 3
+plot(frc, main = "Confidnece Level")
+lines(frc$mean,col="green")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+
+# Add legend to the plot
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+```{r}
+plot(frc, main = "Forcast ANN, Automatic, M1 and Alpha M2")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+lines(fit_m2$fitted,col="yellow")
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+#### 4.3 Model selection
+
+```{r}
+# Function to calculate metrics
+calculate_metrics <- function(y, frc) {
+  MAE <- mean(abs(y - frc$mean))
+  MSE <- mean((y - frc$mean)^2)
+  RMSE <- sqrt(MSE)
+  return(list(MAE = MAE, MSE = MSE, RMSE = RMSE))
+}
+
+# Calculate metrics for different forecasts
+metrics_a <- calculate_metrics(y.tst, frc)
+metrics_m1 <- calculate_metrics(y.tst, frc_m1)
+metrics_m2 <- calculate_metrics(y.tst, frc_m2)
+
+# Create a matrix for the metrics
+metrics_matrix <- matrix(c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+                           metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE,
+                          metrics_a$MSE, metrics_m1$MSE, metrics_m2$MSE),
+                          ncol = 3, byrow = TRUE)
+
+# Add row and column names
+rownames(metrics_matrix) <- c("MAE", "MSE", "RMSE")
+colnames(metrics_matrix) <- c("Automatic", "Alpha M1", "Alpha M2")
+
+# Display the metrics matrix
+metrics_matrix
+
+```
+
+```{r}
+# Create a data frame from the metrics matrix, excluding MSE
+metrics_df <- data.frame(
+  Metric = rep(c("MAE", "RMSE"), each = 3),
+  Value = c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+            metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE),
+  Forecast = rep(c("Automatic", "Alpha M1", "Alpha M2"), times = 2)
+)
+metrics_df$Forecast <- factor(metrics_df$Forecast, levels = c("Automatic", "Alpha M1", "Alpha M2"))
+
+# Create a bar plot
+ggplot(metrics_df, aes(x = Forecast, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "MAE and RMSE Comparison",
+       y = "Metric Value") +
+  theme_minimal()
+
+```
+
+### 5. Answers
+
+-   Which one is best using your judgement?
+
+    In the context of modeling the "Season_B" component within the in-sample data, it is observed that Model M1 excels in filtering out noise and outliers while providing a good fit to the data. Comparatively, Model M2, although successful in noise and outlier reduction, falls short in capturing the seasonality effectively. The automatic model, while fitting the data well in terms of seasonality, struggles to filter out noise and outliers.
+
+    Given these considerations, the judgment leans toward **Model M1** as it achieves a balance between noise reduction and fitting performance.
+
+-   Which one is best using errors?
+
+    The error metrics, MSE and AIC, suggest that the **Automatic** model performs better in terms of error minimization. This implies that the automatic model provides the most accurate predictions for the "Season_B" component within the in-sample data.
+
+-   Does the selected model perform best in the out-of-sample data?
+
+    In the out-of-sample analysis, Model M1 does not emerge as the best choice, as it does not yield the best RMSE and MAE values. **Model M2** exhibits superior performance in terms of these metrics.
+
+    It is essential to acknowledge that while Model M1 excels in filtering out noise and outliers in the in-sample data while fitting well, its out-of-sample performance may differ. Model M2, despite its limitations in fitting, appears to generalize better to unseen data points for forecasting "Season_B."
+
+## Trend Season
+
+### 1. Loading Data
+
+```{r}
+y <- Y[,8]
+# Transform it into a time series
+y <- ts(y,frequency=12)
+```
+
+### 2. Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,12)
+y.trn <- head(y,48)
+```
+
+### 3. Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+### 4. Forecasting
+
+#### 4.1 Model fitting
+
+```{r}
+# Automatic Alpha ANN
+fit <- ets(y.trn,model="ANN")
+print(fit)
+```
+
+```{r}
+# Alpha M1 ANN
+fit_m1 <- ets(y.trn,model="ANN", alpha = 0.7 )
+print(fit_m1)
+```
+
+```{r}
+# Alpha M2 ANN
+fit_m2 <- ets(y.trn,model="ANN", alpha = 0.4 )
+print(fit_m2)
+```
+
+```{r}
+cirt <- array(NA, c(3, 4), dimnames = list(c("Automatic", "M1", "M2"),
+                                         c("MSE", "AIC", "AICc","BIC")))
+
+models <- list(fit, fit_m1, fit_m2)
+
+for (i in 1:3) {
+  cirt[i, "MSE"] <- models[[i]]$mse
+  cirt[i, "AIC"] <- models[[i]]$aic
+  cirt[i, "AICc"] <- models[[i]]$aicc
+  cirt[i, "BIC"] <- models[[i]]$bic
+}
+
+print(cirt)
+```
+
+#### 4.2 Forecasting
+
+-   Forecast ANN
+
+```{r}
+# ploting Automatic ANN
+frc <- forecast(fit, h=12)
+plot(frc, main = "Forcast Automatic ANN")
+lines(fit$fitted,col="green")
+```
+
+-   Forecast ANN and Alpha M1
+
+```{r}
+# ploting M1 vs ANN
+frc_m1 <- forecast(fit_m1,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M1")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2)
+
+# legends
+legend("topleft",c("Automatic","M1"),col=c("green","red"),lty=1)
+```
+
+-   Forecast ANN and Alpha M2
+
+```{r}
+# Ploting M2 vs ANN
+frc_m2 <- forecast(fit_m2,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M2")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m2$fitted,col="yellow")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+lines(y.tst,lty=2) 
+
+# Add legend to the plot
+legend("topleft",c("Automatic","Alpha M2"),col=c("green","yellow"),lty=1)
+```
+
+-   Confidence level ANN, Alpha M1 and Alpha M2
+
+```{r}
+# Ploting confidence level of all 3
+plot(frc, main = "Confidnece Level")
+lines(frc$mean,col="green")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+
+# Add legend to the plot
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+```{r}
+plot(frc, main = "Forcast ANN, Automatic, M1 and Alpha M2")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+lines(fit_m2$fitted,col="yellow")
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+#### 4.3 Model selection
+
+```{r}
+# Function to calculate metrics
+calculate_metrics <- function(y, frc) {
+  MAE <- mean(abs(y - frc$mean))
+  MSE <- mean((y - frc$mean)^2)
+  RMSE <- sqrt(MSE)
+  return(list(MAE = MAE, MSE = MSE, RMSE = RMSE))
+}
+
+# Calculate metrics for different forecasts
+metrics_a <- calculate_metrics(y.tst, frc)
+metrics_m1 <- calculate_metrics(y.tst, frc_m1)
+metrics_m2 <- calculate_metrics(y.tst, frc_m2)
+
+# Create a matrix for the metrics
+metrics_matrix <- matrix(c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+                           metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE,
+                          metrics_a$MSE, metrics_m1$MSE, metrics_m2$MSE),
+                          ncol = 3, byrow = TRUE)
+
+# Add row and column names
+rownames(metrics_matrix) <- c("MAE", "MSE", "RMSE")
+colnames(metrics_matrix) <- c("Automatic", "Alpha M1", "Alpha M2")
+
+# Display the metrics matrix
+metrics_matrix
+
+```
+
+```{r}
+# Create a data frame from the metrics matrix, excluding MSE
+metrics_df <- data.frame(
+  Metric = rep(c("MAE", "RMSE"), each = 3),
+  Value = c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+            metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE),
+  Forecast = rep(c("Automatic", "Alpha M1", "Alpha M2"), times = 2)
+)
+metrics_df$Forecast <- factor(metrics_df$Forecast, levels = c("Automatic", "Alpha M1", "Alpha M2"))
+
+# Create a bar plot
+ggplot(metrics_df, aes(x = Forecast, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "MAE and RMSE Comparison",
+       y = "Metric Value") +
+  theme_minimal()
+
+```
+
+### 5. Answers
+
+-   Which one is best using your judgement?
+
+    When analyzing the in-sample data for the "TrendSeason" component, it becomes evident that **Model M1** effectively filters out noise and outliers while achieving a satisfactory fit compared to the Automatic model. Conversely, Model M2, while excelling in noise and outlier reduction, falls short in capturing the seasonality pattern effectively. The Automatic model, though capable of capturing seasonality, does not effectively filter out noise and outliers.
+
+-   Which one is best using errors?
+
+    Examining error metrics such as MSE and AIC, it becomes apparent that the **Automatic** model performs better in terms of error minimization. This indicates that the Automatic model provides the most accurate predictions for the "TrendSeason" component within the in-sample data.
+
+-   Does the selected model perform best in the out-of-sample data?
+
+    In the out-of-sample analysis, Model M1 does not emerge as the optimal choice. It does not yield the best RMSE and MAE values. On the contrary, Model M2 demonstrates superior performance in terms of these metrics.
+
+    It is important to note that while Model M1 excels in filtering out noise and outliers and provides a good fit within the in-sample data, its out-of-sample performance may vary. **Model M2**, despite its limitations in capturing seasonality during fitting, appears to generalize better to unseen data points when forecasting "TrendSeason.
+
+## AirPassenger
+
+### 1. Loading Data
+
+```{r}
+y <- AirPassengers
+# Transform it into a time series
+y <- ts(y,frequency=12)
+```
+
+### 2. Constructing estimation and hold-out sets
+
+```{r}
+y.tst <- tail(y,29)
+y.trn <- head(y,115)
+```
+
+### 3. Exploration
+
+```{r}
+cma <- cmav(y.trn,outplot=1)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+### 4. Forecasting
+
+#### 4.1 Model fitting
+
+```{r}
+# Automatic Alpha ANN
+fit <- ets(y.trn,model="ANN")
+print(fit)
+```
+
+```{r}
+# Alpha M1 ANN
+fit_m1 <- ets(y.trn,model="ANN", alpha = 0.7 )
+print(fit_m1)
+```
+
+```{r}
+# Alpha M2 ANN
+fit_m2 <- ets(y.trn,model="ANN", alpha = 0.4 )
+print(fit_m2)
+```
+
+```{r}
+cirt <- array(NA, c(3, 4), dimnames = list(c("Automatic", "M1", "M2"),
+                                         c("MSE", "AIC", "AICc","BIC")))
+
+models <- list(fit, fit_m1, fit_m2)
+
+for (i in 1:3) {
+  cirt[i, "MSE"] <- models[[i]]$mse
+  cirt[i, "AIC"] <- models[[i]]$aic
+  cirt[i, "AICc"] <- models[[i]]$aicc
+  cirt[i, "BIC"] <- models[[i]]$bic
+}
+
+print(cirt)
+```
+
+#### 4.2 Forecasting
+
+-   Forecast ANN
+
+```{r}
+# ploting Automatic ANN
+frc <- forecast(fit, h=12)
+plot(frc, main = "Forcast Automatic ANN")
+lines(fit$fitted,col="green")
+```
+
+-   Forecast ANN and Alpha M1
+
+```{r}
+# ploting M1 vs ANN
+frc_m1 <- forecast(fit_m1,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M1")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red") # 95% upper
+lines(y.tst,lty=2)
+
+# legends
+legend("topleft",c("Automatic","M1"),col=c("green","red"),lty=1)
+```
+
+-   Forecast ANN and Alpha M2
+
+```{r}
+# Ploting M2 vs ANN
+frc_m2 <- forecast(fit_m2,h=12)
+plot(frc, main = "Forcast ANN, Automatic vs Alpha M2")
+lines(frc$mean,col="green")
+lines(fit$fitted,col="green")
+lines(fit_m2$fitted,col="yellow")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+lines(y.tst,lty=2) 
+
+# Add legend to the plot
+legend("topleft",c("Automatic","Alpha M2"),col=c("green","yellow"),lty=1)
+```
+
+-   Confidence level ANN, Alpha M1 and Alpha M2
+
+```{r}
+# Ploting confidence level of all 3
+plot(frc, main = "Confidnece Level")
+lines(frc$mean,col="green")
+
+lines(frc_m1$mean,col="red")
+lines(frc_m1$lower[,2],col="red") # 95% lower
+lines(frc_m1$upper[,2],col="red")
+
+lines(frc_m2$mean,col="yellow")
+lines(frc_m2$lower[,2],col="yellow") # 95% lower
+lines(frc_m2$upper[,2],col="yellow") # 95% upper
+
+# Add legend to the plot
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+```{r}
+plot(frc, main = "Forcast ANN, Automatic, M1 and Alpha M2")
+lines(fit$fitted,col="green")
+lines(fit_m1$fitted,col="red")
+lines(fit_m2$fitted,col="yellow")
+legend("topleft",c("Automatic","M1","M2"),col=c("green","red","yellow"),lty=1)
+```
+
+#### 4.3 Model selection
+
+```{r}
+# Function to calculate metrics
+calculate_metrics <- function(y, frc) {
+  MAE <- mean(abs(y - frc$mean))
+  MSE <- mean((y - frc$mean)^2)
+  RMSE <- sqrt(MSE)
+  return(list(MAE = MAE, MSE = MSE, RMSE = RMSE))
+}
+
+# Calculate metrics for different forecasts
+metrics_a <- calculate_metrics(y.tst, frc)
+metrics_m1 <- calculate_metrics(y.tst, frc_m1)
+metrics_m2 <- calculate_metrics(y.tst, frc_m2)
+
+# Create a matrix for the metrics
+metrics_matrix <- matrix(c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+                           metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE,
+                          metrics_a$MSE, metrics_m1$MSE, metrics_m2$MSE),
+                          ncol = 3, byrow = TRUE)
+
+# Add row and column names
+rownames(metrics_matrix) <- c("MAE", "MSE", "RMSE")
+colnames(metrics_matrix) <- c("Automatic", "Alpha M1", "Alpha M2")
+
+# Display the metrics matrix
+metrics_matrix
+
+```
+
+```{r}
+# Create a data frame from the metrics matrix, excluding MSE
+metrics_df <- data.frame(
+  Metric = rep(c("MAE", "RMSE"), each = 3),
+  Value = c(metrics_a$MAE, metrics_m1$MAE, metrics_m2$MAE,
+            metrics_a$RMSE, metrics_m1$RMSE, metrics_m2$RMSE),
+  Forecast = rep(c("Automatic", "Alpha M1", "Alpha M2"), times = 2)
+)
+metrics_df$Forecast <- factor(metrics_df$Forecast, levels = c("Automatic", "Alpha M1", "Alpha M2"))
+
+# Create a bar plot
+ggplot(metrics_df, aes(x = Forecast, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "MAE and RMSE Comparison",
+       y = "Metric Value") +
+  theme_minimal()
+
+```
+
+### 5. Answers
+
+-   Which one is best using your judgement?
+
+    Upon examining the in-sample data for the "AirPassengers" component, it becomes evident that **Model M1** effectively mitigates noise and outliers while achieving a robust fit compared to the Automatic model. Conversely, Model M2, while less successful in capturing seasonality during fitting, excels in noise and outlier reduction. The Automatic model, regrettably, does not effectively filter out noise and outliers.
+
+    Given these insights, Model M1 emerges as the preferred choice due to its balanced approach, prioritizing noise reduction and fitting performance
+
+-   Which one is best using errors?
+
+    When considering error metrics such as MSE and AIC, it becomes clear that the **Automatic** model performs better in terms of error minimization. This suggests that the Automatic model provides the most accurate predictions for the "AirPassengers" component within the in-sample data.
+
+-   Does the selected model perform best in the out-of-sample data?
+
+    in the out-of-sample analysis, Model M1 does not prove to be the optimal choice. It does not yield the best RMSE and MAE values. Conversely, Model M2 exhibits superior performance in terms of these metrics.
+
+    It is essential to acknowledge that while Model M1 excels in noise and outlier reduction and provides a strong fit within the in-sample data, its out-of-sample performance may differ. **Model M2**, despite its limitations in fitting seasonality, appears to generalize better to unseen data points when forecasting "AirPassengers."
