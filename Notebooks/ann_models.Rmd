@@ -2,8 +2,12 @@
 title: "Assignment 2"
 author: "Rizny Mubarak"
 date: "2023-09-05"
-output: 
-  pdf_document: 
+output:
+  html_document:
+    toc: yes
+    toc_depth: '5'
+    df_print: paged
+  pdf_document:
     toc: yes
     toc_depth: 5
     number_sections: yes

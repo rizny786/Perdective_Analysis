@@ -1,0 +1,672 @@
+---
+title: "Assigment 3"
+author: "Rizny Mubarak"
+output: pdf_document
+---
+
+## 1. Load data and relevant packages
+
+```{r}
+load("./grocery.Rdata")
+```
+
+```{r}
+plot(y)
+```
+
+```{r}
+n <- length(y)
+n
+```
+
+```{r}
+library(forecast)
+library(tsutils)
+```
+
+## 2. in- and out-of-sample and data exploration
+
+```{r}
+y.trn <- head(y,7*50) 
+y.tst <- tail(y,7*2) 
+```
+
+```{r}
+cma <- cmav(y.trn, outplot=TRUE)
+```
+
+```{r}
+seasplot(y.trn)
+```
+
+```{r}
+seasplot(y.trn,outplot=2)
+```
+
+```{r}
+seasplot(y.trn,outplot=3)
+```
+
+```{r}
+seasplot(head(y.trn,10*7))
+```
+
+```{r}
+seasplot(tail(y.trn,10*7))
+```
+
+```{r}
+dc <- decomp(y.trn, outplot=TRUE)
+```
+
+```{r}
+dc <- decomp(y.trn, outplot=TRUE, type="pure.seasonal")
+```
+
+## 3. Forecasting
+
+### 3.1 Selection of forecasts using information criteria
+
+```{r}
+fit <- ets(y.trn)
+fit
+```
+
+```{r}
+# Level model
+fit1 <- ets(y.trn,model="ANN")
+# Seasonal model
+fit2 <- ets(y.trn,model="ANA")
+# Linear trend model
+fit3 <- ets(y.trn,model="AAN",damped=FALSE)
+# Damped trend model
+fit4 <- ets(y.trn,model="AAN",damped=TRUE)
+# Trend seasonal model
+fit5 <- ets(y.trn,model="AAA",damped=FALSE)
+# Damped trend seasonal model
+fit6 <- ets(y.trn,model="AAA",damped=TRUE)
+```
+
+```{r}
+aicc <- c(fit1$aicc,fit2$aicc,fit3$aicc,fit4$aicc,fit5$aicc,fit6$aicc)
+
+names(aicc) <- c("ANN","ANA","AAN","AAdN","AAA","AAdA")
+aicc
+```
+
+```{r}
+which.min(aicc)
+```
+
+```{r}
+fit$aicc
+```
+
+```{r}
+fit2$aicc
+```
+
+### 3.2 Selection of forecasts using a validation set
+
+```{r}
+y.ins <- head(y.trn,48*7)
+y.val <- tail(y.trn,2*7)
+```
+
+```{r}
+h <- 7
+```
+
+```{r}
+fit1v <- ets(y.ins,model="ANN")
+fit2v <- ets(y.ins,model="ANA")
+fit3v <- ets(y.ins,model="AAN",damped=FALSE)
+fit4v <- ets(y.ins,model="AAN",damped=TRUE)
+fit5v <- ets(y.ins,model="AAA",damped=FALSE)
+fit6v <- ets(y.ins,model="AAA",damped=TRUE)
+fit7v <- ets(y.ins,model="MNM")
+```
+
+```{r}
+frc1v <- forecast(fit1v,h=h)
+frc2v <- forecast(fit2v,h=h)
+frc3v <- forecast(fit3v,h=h)
+frc4v <- forecast(fit4v,h=h)
+frc5v <- forecast(fit5v,h=h)
+frc6v <- forecast(fit6v,h=h)
+frc7v <- forecast(fit7v,h=h)
+frc8v <- tail(y.ins,frequency(y.ins))[1:h]
+```
+
+```{r}
+plot(frc1v)
+```
+
+```{r}
+plot(frc6v)
+```
+
+```{r}
+err1v <- mean(abs(y.val[1:h] - frc1v$mean))
+err2v <- mean(abs(y.val[1:h] - frc2v$mean))
+err3v <- mean(abs(y.val[1:h] - frc3v$mean))
+err4v <- mean(abs(y.val[1:h] - frc4v$mean))
+err5v <- mean(abs(y.val[1:h] - frc5v$mean))
+err6v <- mean(abs(y.val[1:h] - frc6v$mean))
+err7v <- mean(abs(y.val[1:h] - frc7v$mean))
+
+err8v <- mean(abs(y.val[1:h] - frc8v))
+```
+
+```{r}
+errv <- c(err1v, err2v, err3v, err4v, err5v, err6v, err7v, err8v)
+names(errv) <- c("ANN","ANA","AAN","AAdN","AAA","AAdA","MNM","Naive")
+errv
+```
+
+```{r}
+which.min(errv)
+```
+
+```{r}
+omax <- length(y.val) - h + 1
+omax
+```
+
+```{r}
+models <- c("ANN", "ANA", "AAN", "AAN", "AAA", "AAA", "MNM", "Naive")
+damped <- c(FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, FALSE)
+
+err <- array(NA,c(omax,8))
+
+frcs <- array(NA,c(h,8))
+```
+
+```{r}
+for (o in 1:omax){
+print(o)
+}
+```
+
+```{r}
+# For each forecast origin
+for (o in 1:omax){
+  y.ins <- head(y.trn,48*7-1+o) 
+  y.val <- tail(y.trn,2*7-o+1) 
+  
+  # Fit and forecast 
+  for (m in 1:7){
+  fitTemp <- ets(y.ins,model=models[m],damped=damped[m])
+  frcs[,m] <- forecast(fitTemp,h=h)$mean
+  err[o,m] <- mean(abs(y.val[1:h] - frcs[,m]))
+  }
+  # seasonal naive
+  frcs[,8] <- tail(y.ins,frequency(y.ins))[1:h]
+  err[o,8] <- mean(abs(y.val[1:h] - frcs[,8]))
+}
+```
+
+```{r}
+colnames(err) <- c("ANN", "ANA", "AAN", "AAdN", "AAA", "AAdA", "MNM", "Naive")
+err
+```
+
+```{r}
+errMean <- colMeans(err)
+errMean
+```
+
+```{r}
+which.min(errMean)
+```
+
+```{r}
+boxplot(err)
+```
+
+## 4. Out-of-sample evaluation
+
+```{r}
+modelsTest <- c("ANA", "MNM", "AAA", "Naive", "CombMean", "CombMedian")
+dampedTest <- c(FALSE, FALSE, TRUE)
+
+# Pre-allocate memory
+omaxTest <- length(y.tst) - h + 1
+errTest <- array(NA,c(omaxTest,6))
+frcsTest <- array(NA,c(h,6))
+
+# For each forecast origin
+for (o in 1:omaxTest){
+  
+  y.trnTest <- head(y,50*7-1+o) 
+  y.tstTest <- tail(y,2*7-o+1)
+  
+  # Fit and forecast exponential smoothing models
+  for (m in 1:3){
+    fitTemp <- ets(y.trnTest,model=modelsTest[m],damped=dampedTest[m])
+    frcsTest[,m] <- forecast(fitTemp,h=h)$mean
+    errTest[o,m] <- mean(abs(y.tstTest[1:h] - frcsTest[,m]))
+  }
+  
+  # Forecast using the seasonal naive
+  frcsTest[,4] <- tail(y.trnTest,frequency(y.trnTest))[1:h]
+  errTest[o,4] <- mean(abs(y.tstTest[1:h] - frcsTest[,4]))
+  
+  # Combinations
+  # Mean
+  frcsTest[,5] <- apply(frcsTest[,1:4],1,mean)
+  errTest[o,5] <- mean(abs(y.tstTest[1:h] - frcsTest[,5]))
+  
+  # Median:
+  frcsTest[,6] <- apply(frcsTest[,1:4],1,median)
+  errTest[o,6] <- mean(abs(y.tstTest[1:h] - frcsTest[,6]))
+}
+
+# Assign names to errors
+colnames(errTest) <- c("ANA","MNM","AAdA","Naive","Comb.Mean","Comb.Median")
+
+# Summarise and plot errors
+boxplot(errTest)
+```
+
+```{r}
+errTestMean <- colMeans(errTest)
+print(errTestMean)
+```
+
+```{r}
+which.min(errTestMean)
+```
+
+## 5. Forecast combination with AIC weights
+
+```{r}
+y.trn <- window(AirPassengers,end=c(1959,12))
+y.tst <- window(AirPassengers,start=c(1960,1))
+```
+
+```{r}
+models <- c("ANN","AAN","MNM","MAM")
+```
+
+```{r}
+fit <- list()
+frc <- array(NA,c(12,4),dimnames=list(NULL,models))
+```
+
+```{r}
+for (i in 1:4){
+fit[[i]] <- ets(y.trn,model=models[i],damped=FALSE)
+frc[,i] <- forecast(fit[[i]],h=12)$mean
+}
+```
+
+```{r}
+AIC <- unlist(lapply(fit,function(x){x$aic}))
+AIC
+```
+
+```{r}
+dAIC <- AIC - min(AIC)
+dAIC <- exp(-0.5*dAIC)
+waic <- dAIC/sum(dAIC)
+waic
+```
+
+```{r}
+round(waic,4)
+```
+
+```{r}
+plot(AirPassengers)
+```
+
+```{r}
+# Prepare variables and models
+fit2 <- list()
+frc2 <- array(NA,c(12,6))
+models <- rep(c("AAA","MAM","MMM"),2)
+damped <- c(rep(FALSE,3),rep(TRUE,3))
+
+# Fit models and generate forecasts
+for (i in 1:6){
+fit2[[i]] <- ets(y.trn,model=models[i],damped=damped[i])
+frc2[,i] <- forecast(fit2[[i]],h=12)$mean
+}
+#Extract AIC and calculate weights
+AIC2 <- unlist(lapply(fit2,function(x){x$aic}))
+dAIC2 <- AIC2 - min(AIC2)
+dAIC2 <- exp(-0.5*dAIC2)
+waic2 <- dAIC2/sum(dAIC2)
+round(waic2,4)
+```
+
+```{r}
+# AIC weights
+frcComb <- frc2 %*% cbind(waic2)
+
+# Mean
+frcComb <- cbind(frcComb, rowMeans(frc2))
+
+# Median
+frcComb <- cbind(frcComb, apply(frc2,1,median))
+
+# Selection
+frcComb <- cbind(frcComb, frc2[,which.min(AIC2)])
+colnames(frcComb) <- c("Comb.AIC","Comb.Mean","Comb.Median","Selection")
+```
+
+```{r}
+err <- matrix(rep(y.tst,4),ncol=4) - frcComb
+MAE <- colMeans(abs(err))
+round(MAE,2)
+```
+
+# Exercise
+
+## Question 1
+
+## 1. in- and out-of-sample and data exploration
+
+```{r}
+y.trn <- head(y,7*45) 
+y.tst <- tail(y,7*7) 
+```
+
+```{r}
+cma <- cmav(y.trn, outplot=TRUE)
+```
+
+## 2. Forecasting
+
+### 2.1 Selection of forecasts using information criteria
+
+```{r}
+fit <- ets(y.trn)
+fit
+```
+
+```{r}
+# Level model
+fit1 <- ets(y.trn,model="ANN")
+# Seasonal model
+fit2 <- ets(y.trn,model="ANA")
+# Linear trend model
+fit3 <- ets(y.trn,model="AAN",damped=FALSE)
+# Damped trend model
+fit4 <- ets(y.trn,model="AAN",damped=TRUE)
+# Trend seasonal model
+fit5 <- ets(y.trn,model="AAA",damped=FALSE)
+# Damped trend seasonal model
+fit6 <- ets(y.trn,model="AAA",damped=TRUE)
+```
+
+```{r}
+aicc <- c(fit1$aicc,fit2$aicc,fit3$aicc,fit4$aicc,fit5$aicc,fit6$aicc)
+
+# Name Aicc vector
+names(aicc) <- c("ANN","ANA","AAN","AAdN","AAA","AAdA")
+aicc
+```
+
+```{r}
+which.min(aicc)
+```
+
+```{r}
+fit$aicc
+```
+
+```{r}
+fit2$aicc
+```
+
+### 2.2 Selection of forecasts using a validation set
+
+```{r}
+y.ins <- head(y.trn,35*7)
+y.val <- tail(y.trn,10*7)
+```
+
+```{r}
+h <- 7
+```
+
+```{r}
+fit1v <- ets(y.ins,model="ANN")
+fit2v <- ets(y.ins,model="ANA")
+fit3v <- ets(y.ins,model="AAN",damped=FALSE)
+fit4v <- ets(y.ins,model="AAN",damped=TRUE)
+fit5v <- ets(y.ins,model="AAA",damped=FALSE)
+fit6v <- ets(y.ins,model="AAA",damped=TRUE)
+fit7v <- ets(y.ins,model="MNM")
+```
+
+```{r}
+frc1v <- forecast(fit1v,h=h)
+frc2v <- forecast(fit2v,h=h)
+frc3v <- forecast(fit3v,h=h)
+frc4v <- forecast(fit4v,h=h)
+frc5v <- forecast(fit5v,h=h)
+frc6v <- forecast(fit6v,h=h)
+frc7v <- forecast(fit7v,h=h)
+frc8v <- tail(y.ins,frequency(y.ins))[1:h]
+```
+
+```{r}
+err1v <- mean(abs(y.val[1:h] - frc1v$mean))
+err2v <- mean(abs(y.val[1:h] - frc2v$mean))
+err3v <- mean(abs(y.val[1:h] - frc3v$mean))
+err4v <- mean(abs(y.val[1:h] - frc4v$mean))
+err5v <- mean(abs(y.val[1:h] - frc5v$mean))
+err6v <- mean(abs(y.val[1:h] - frc6v$mean))
+err7v <- mean(abs(y.val[1:h] - frc7v$mean))
+
+err8v <- mean(abs(y.val[1:h] - frc8v))
+```
+
+```{r}
+errv <- c(err1v, err2v, err3v, err4v, err5v, err6v, err7v, err8v)
+names(errv) <- c("ANN","ANA","AAN","AAdN","AAA","AAdA","MNM","Naive")
+errv
+```
+
+```{r}
+which.min(errv)
+```
+
+```{r}
+omax <- length(y.val) - h + 1
+omax
+```
+
+```{r}
+# Define Model's
+models <- c("ANN", "ANA", "AAN", "AAN", "AAA", "AAA", "MNM", "Naive")
+damped <- c(FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, FALSE)
+
+err <- array(NA,c(omax,8))
+
+frcs <- array(NA,c(h,8))
+```
+
+```{r}
+# For each forecast origin
+for (o in 1:omax){
+  y.ins <- head(y.trn,35*7-1+o) 
+  y.val <- tail(y.trn,10*7-o+1) 
+  
+  # Fit and forecast
+  for (m in 1:7){
+  fitTemp <- ets(y.ins,model=models[m],damped=damped[m])
+  frcs[,m] <- forecast(fitTemp,h=h)$mean
+  err[o,m] <- mean(abs(y.val[1:h] - frcs[,m]))
+  }
+  # Forecast using the seasonal naive
+  frcs[,8] <- tail(y.ins,frequency(y.ins))[1:h]
+  err[o,8] <- mean(abs(y.val[1:h] - frcs[,8]))
+}
+```
+
+```{r}
+colnames(err) <- c("ANN", "ANA", "AAN", "AAdN", "AAA", "AAdA", "MNM", "Naive")
+err
+```
+
+```{r}
+errMean <- colMeans(err)
+errMean
+```
+
+```{r}
+which.min(errMean)
+```
+
+```{r}
+boxplot(err)
+```
+
+## 3. Out-of-sample evaluation
+
+```{r}
+modelsTest <- c("ANA", "MNM", "AAA","AAA", "Naive", "CombMean", "CombMedian")
+dampedTest <- c(FALSE, FALSE, TRUE,FALSE)
+
+# Pre-allocate memory
+omaxTest <- length(y.tst) - h + 1
+errTest <- array(NA,c(omaxTest,7))
+frcsTest <- array(NA,c(h,7))
+
+# For each forecast origin
+for (o in 1:omaxTest){
+  y.trnTest <- head(y,35*7-1+o) 
+  y.tstTest <- tail(y,10*7-o+1)
+  
+  # Fit and forecast
+  for (m in 1:4){
+    fitTemp <- ets(y.trnTest,model=modelsTest[m],damped=dampedTest[m])
+    frcsTest[,m] <- forecast(fitTemp,h=h)$mean
+    errTest[o,m] <- mean(abs(y.tstTest[1:h] - frcsTest[,m]))
+  }
+  
+  # Forecast using the seasonal naive
+  frcsTest[,5] <- tail(y.trnTest,frequency(y.trnTest))[1:h]
+  errTest[o,5] <- mean(abs(y.tstTest[1:h] - frcsTest[,5]))
+  
+  # Combinations
+  # Mean
+  frcsTest[,6] <- apply(frcsTest[,1:5],1,mean)
+  errTest[o,6] <- mean(abs(y.tstTest[1:h] - frcsTest[,6]))
+  
+  # Median
+  frcsTest[,7] <- apply(frcsTest[,1:5],1,median)
+  errTest[o,7] <- mean(abs(y.tstTest[1:h] - frcsTest[,7]))
+}
+# Assign names to errors
+colnames(errTest) <- c("ANA","MNM","AAdA","AAA","Naive","Comb.Mean","Comb.Median")
+
+# Summarise and plot errors
+boxplot(errTest)
+```
+
+```{r}
+errTestMean <- colMeans(errTest)
+print(errTestMean)
+```
+
+```{r}
+which.min(errTestMean)
+```
+
+::: {.illustration style="color: green"}
+**Yes,**
+
+In the context of time series forecasting for grocery sales in a US supermarket store, we employed two distinct forecasting methodologies, namely information criteria and various validation set strategies, to assess the impact of different data splits on forecasting results. Initially, a data split of Train: 48 weeks, validation set: 2 weeks, and test set: 2 weeks was employed. Under this configuration, both automatic model selection and method-wise analysis consistently favored the MNM model for forecasting. Information criteria consistently pointed to ANA, and validation using single iterations resulted in MNM. The rolling origin validation approach yielded AAdA, while the rolling origin with combination mean exhibited distinct performance.
+
+Subsequently, we modified the data split to Train: 35 weeks, validation set: 10 weeks, and test set: 7 weeks, leading to a shift in the validation dynamics. Surprisingly, despite the change in data split, the automatic ETS model selection continued to favor MNM, indicating a stable choice across different data splits. Information criteria remained consistent, indicating ANA. However, validation with a single iteration demonstrated a noteworthy shift to AAA, suggesting a potential sensitivity to the training-validation-test ratio. In contrast, the validation through a rolling origin approach remained relatively stable, yielding AAdA. The utilization of a rolling origin in combination with the mean model persisted as a viable alternative.
+
+The comparison between the initial and revised results highlights the impact of altering the training, validation, and test split on forecasting models. It emphasizes the stability of certain model choices, such as MNM, and the sensitivity of others, notably the single iteration validation, to changes in data distribution. These findings underscore the importance of carefully selecting data splits when conducting time series forecasting, as they can significantly influence the choice and performance of forecasting models. Ultimately, this insight informs the decision-making process regarding the adoption of specific forecasting approaches for grocery sales forecasting in the supermarket context.
+:::
+
+## Question 2
+
+## 1. in- and out-of-sample and data exploration
+
+```{r}
+y <- AirPassengers
+```
+
+```{r}
+y.trn <- head(y,8*12) 
+y.tst <- tail(y,4*12)
+```
+
+```{r}
+cma <- cmav(y.trn, outplot=TRUE)
+```
+
+## 2. Forecasting
+
+```{r}
+fit <- ets(y.trn)
+fit
+```
+
+### 2.1 Rolling origin validation
+
+```{r}
+h <- 12
+```
+
+```{r}
+omax <- length(y.tst) - h + 1 
+omax
+```
+
+```{r}
+models <- c("ANN", "ANA", "AAN", "AAN", "AAA", "AAA", "MNM", "Naive") 
+damped <- c(FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, FALSE)  
+err <- array(NA,c(omax,8))  
+frcs <- array(NA,c(h,8))
+```
+
+```{r}
+# For each forecast origin 
+for (o in 1:omax){   
+  # Split training set   
+  y.trn <- head(y.trn,8*12-1+o) 
+  y.tst <- tail(y.tst,4*12-o+1) 
+  
+  # Fit and forecast with all exponential smoothing models   
+  for (m in 1:7){   
+    fitTemp <- ets(y.trn,model=models[m],damped=damped[m])   
+    frcs[,m] <- forecast(fitTemp,h=h)$mean   
+    err[o,m] <- mean(abs(y.tst[1:h] - frcs[,m]))   
+  }
+  # Forecast using the seasonal naive   
+  # Remember we do not have a model for this   
+  frcs[,8] <- tail(y.trn,frequency(y.trn))[1:h]   
+  err[o,8] <- mean(abs(y.tst[1:h] - frcs[,8])) }
+```
+
+```{r}
+colnames(err) <- c("ANN", "ANA", "AAN", "AAdN", "AAA", "AAdA", "MNM", "Naive") 
+err
+```
+
+```{r}
+errMean <- colMeans(err) 
+errMean
+```
+
+```{r}
+which.min(errMean)
+```
+
+```{r}
+boxplot(err)
+```
+
+::: {.illustration style="color: green"}
+The results indeed changed between the two attempts of our time series forecasting experiment with the AirPassengers dataset. The primary reason for this shift in results can be attributed to the alteration in the training-testing data split strategy. In the initial attempt, with an 11-year training period and a 1-year testing period, the combination mean model emerged as the optimal choice. However, in the subsequent attempt, where we modified the data split to an 8-year training period and a 4-year testing period, the AAA model was identified as the best-performing option. This change underscores the sensitivity of forecasting outcomes to variations in the distribution of training and testing data. It implies that the choice of an optimal forecasting model is contingent on the specific data split ratio and distribution, emphasizing the need for thoughtful consideration in determining an appropriate data partitioning strategy for robust time series forecasting.
+:::
