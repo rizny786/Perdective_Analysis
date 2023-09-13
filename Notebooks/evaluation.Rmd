@@ -1,7 +1,14 @@
 ---
 title: "Assigment 3"
 author: "Rizny Mubarak"
-output: pdf_document
+output:
+  html_document:
+    toc: yes
+    toc_depth: '5'
+    df_print: paged
+  pdf_document: 
+    toc: yes
+    toc_depth: 5
 ---
 
 ## 1. Load data and relevant packages
@@ -331,7 +338,7 @@ damped <- c(rep(FALSE,3),rep(TRUE,3))
 # Fit models and generate forecasts
 for (i in 1:6){
 fit2[[i]] <- ets(y.trn,model=models[i],damped=damped[i])
-frc2[,i] <- forecast(fit2[[i]],h=12)$mean
+frc2[,i] <- forecast(fit2[[i]], h = 12)$mean
 }
 #Extract AIC and calculate weights
 AIC2 <- unlist(lapply(fit2,function(x){x$aic}))
@@ -510,7 +517,6 @@ for (o in 1:omax){
 
 ```{r}
 colnames(err) <- c("ANN", "ANA", "AAN", "AAdN", "AAA", "AAdA", "MNM", "Naive")
-err
 ```
 
 ```{r}
@@ -581,14 +587,19 @@ which.min(errTestMean)
 ::: {.illustration style="color: green"}
 **Yes,**
 
-In the context of time series forecasting for grocery sales in a US supermarket store, we employed two distinct forecasting methodologies, namely information criteria and various validation set strategies, to assess the impact of different data splits on forecasting results. Initially, a data split of Train: 48 weeks, validation set: 2 weeks, and test set: 2 weeks was employed. Under this configuration, both automatic model selection and method-wise analysis consistently favored the MNM model for forecasting. Information criteria consistently pointed to ANA, and validation using single iterations resulted in MNM. The rolling origin validation approach yielded AAdA, while the rolling origin with combination mean exhibited distinct performance.
+In the context of time series forecasting for grocery sales in a US supermarket store, two distinct forecasting methodologies were employed to evaluate the impact of varying data splits on forecasting outcomes. Initially, a data split consisting of 48 weeks for training, 2 weeks for validation, and 2 weeks for testing was utilized. Under this configuration, both automatic model selection and method-wise analysis consistently favored the MNM model for forecasting. Concurrently, the information criteria consistently indicated ANA as the preferred model choice, and validation through single iterations consistently resulted in the MNM model being selected. Furthermore, the rolling origin validation approach produced the AAdA model, while the rolling origin combined with the mean model exhibited distinct performance characteristics.
 
-Subsequently, we modified the data split to Train: 35 weeks, validation set: 10 weeks, and test set: 7 weeks, leading to a shift in the validation dynamics. Surprisingly, despite the change in data split, the automatic ETS model selection continued to favor MNM, indicating a stable choice across different data splits. Information criteria remained consistent, indicating ANA. However, validation with a single iteration demonstrated a noteworthy shift to AAA, suggesting a potential sensitivity to the training-validation-test ratio. In contrast, the validation through a rolling origin approach remained relatively stable, yielding AAdA. The utilization of a rolling origin in combination with the mean model persisted as a viable alternative.
+Subsequently, the data split was modified to comprise 35 weeks for training, 10 weeks for validation, and 7 weeks for testing, leading to a shift in the validation dynamics. Surprisingly, despite this change in data distribution, the automatic ETS model selection process continued to favor the MNM model, indicating its robustness across different data splits. The information criteria consistently pointed to ANA, reaffirming its suitability. However, the validation approach using single iterations notably shifted towards favoring the AAA model, suggesting sensitivity to the training-validation-test ratio. In contrast, the rolling origin validation approach remained relatively stable, consistently yielding the AAdA model as the chosen option. The utilization of a rolling origin approach in conjunction with the mean model persisted as a viable alternative.
 
-The comparison between the initial and revised results highlights the impact of altering the training, validation, and test split on forecasting models. It emphasizes the stability of certain model choices, such as MNM, and the sensitivity of others, notably the single iteration validation, to changes in data distribution. These findings underscore the importance of carefully selecting data splits when conducting time series forecasting, as they can significantly influence the choice and performance of forecasting models. Ultimately, this insight informs the decision-making process regarding the adoption of specific forecasting approaches for grocery sales forecasting in the supermarket context.
+The comparative analysis of the initial and revised results underscores the profound impact of altering the training, validation, and test split configurations on the performance and selection of forecasting models. It highlights the resilience of certain model choices, such as MNM, in the face of changing data distributions, while also revealing the sensitivity of other approaches, notably single iteration validation, to shifts in data distribution. These findings accentuate the critical importance of carefully considering and selecting data splits when engaging in time series forecasting tasks, as they wield significant influence over the choice and effectiveness of forecasting models. Ultimately, these insights guide decision-making processes in the adoption of specific forecasting methodologies for the context of grocery sales forecasting within a supermarket setting.
 :::
 
 ## Question 2
+
+::: {style="color:blue"}
+For this question, I'm comparing AIC weight approach with Rolling origin approach, \
+So I'll be creating same trend, season model's ("AAA","MAM","MMM"), with and without damped models. Also using the same -In and -Out sample split.
+:::
 
 ## 1. in- and out-of-sample and data exploration
 
@@ -597,12 +608,8 @@ y <- AirPassengers
 ```
 
 ```{r}
-y.trn <- head(y,8*12) 
-y.tst <- tail(y,4*12)
-```
-
-```{r}
-cma <- cmav(y.trn, outplot=TRUE)
+y.trn <- head(y,11*12) 
+y.tst <- tail(y,1*12)
 ```
 
 ## 2. Forecasting
@@ -612,7 +619,7 @@ fit <- ets(y.trn)
 fit
 ```
 
-### 2.1 Rolling origin validation
+### 2.1 Rolling origin testing
 
 ```{r}
 h <- 12
@@ -624,33 +631,30 @@ omax
 ```
 
 ```{r}
-models <- c("ANN", "ANA", "AAN", "AAN", "AAA", "AAA", "MNM", "Naive") 
-damped <- c(FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE, FALSE)  
-err <- array(NA,c(omax,8))  
-frcs <- array(NA,c(h,8))
+models <- c("AAA", "MAM", "MMM", "AAA", "MAM", "MMM") 
+damped <- c(FALSE, FALSE, FALSE, TRUE, TRUE, TRUE)  
+err <- array(NA,c(omax,6))  
+frcs <- array(NA,c(h,6))
 ```
 
 ```{r}
 # For each forecast origin 
 for (o in 1:omax){   
   # Split training set   
-  y.trn <- head(y.trn,8*12-1+o) 
-  y.tst <- tail(y.tst,4*12-o+1) 
+  y.trn <- head(y.trn,11*12-1+o) 
+  y.tst <- tail(y.tst,1*12-o+1) 
   
-  # Fit and forecast with all exponential smoothing models   
-  for (m in 1:7){   
+  # Fit and forecast same 6 models   
+  for (m in 1:6){   
     fitTemp <- ets(y.trn,model=models[m],damped=damped[m])   
     frcs[,m] <- forecast(fitTemp,h=h)$mean   
     err[o,m] <- mean(abs(y.tst[1:h] - frcs[,m]))   
   }
-  # Forecast using the seasonal naive   
-  # Remember we do not have a model for this   
-  frcs[,8] <- tail(y.trn,frequency(y.trn))[1:h]   
-  err[o,8] <- mean(abs(y.tst[1:h] - frcs[,8])) }
+}
 ```
 
 ```{r}
-colnames(err) <- c("ANN", "ANA", "AAN", "AAdN", "AAA", "AAdA", "MNM", "Naive") 
+colnames(err) <- c("AAA", "MAM", "MMM", "AAdA", "MAdM", "MMdM")  
 err
 ```
 
@@ -668,5 +672,33 @@ boxplot(err)
 ```
 
 ::: {.illustration style="color: green"}
-The results indeed changed between the two attempts of our time series forecasting experiment with the AirPassengers dataset. The primary reason for this shift in results can be attributed to the alteration in the training-testing data split strategy. In the initial attempt, with an 11-year training period and a 1-year testing period, the combination mean model emerged as the optimal choice. However, in the subsequent attempt, where we modified the data split to an 8-year training period and a 4-year testing period, the AAA model was identified as the best-performing option. This change underscores the sensitivity of forecasting outcomes to variations in the distribution of training and testing data. It implies that the choice of an optimal forecasting model is contingent on the specific data split ratio and distribution, emphasizing the need for thoughtful consideration in determining an appropriate data partitioning strategy for robust time series forecasting.
+Yes the results changed.\
+
+Approach 1, "Forecast Combination with AIC Weights":
+
+Under Approach 1, a combination of forecasting models was explored, incorporating various weighted averaging techniques. Specifically, this approach considered models such as the Combined Weighted Average, Combined Mean, Combined Median, and the Minimum AIC model.
+
+The outcomes of Approach 1 indicated that the ensemble-based methodology led to relatively low forecast errors. Notably, the Minimum AIC model demonstrated competitive performance, exhibiting a forecast error of 21.64.
+
+In this approach, the emphasis was on leveraging the principles of model combination and selection, with the goal of harnessing the strengths of multiple models to enhance forecasting accuracy.
+
+Approach 2, "Rolling Origin":
+
+Approach 2, adopted a distinct strategy. This methodology involved the utilization of a rolling origin approach, where each individual forecasting model (AAA, MAM, MMM, AAdA, MAdM, MMdM) was independently tested.
+
+The results obtained in Approach 2 revealed a discernible shift in forecasting performance when compared to Approach 1. Significantly, one specific individual model consistently outperformed the others in terms of forecast accuracy.
+
+The standout model in Approach 2 was identified as the MAM (Model-Additive-Additive-Additive) model, which consistently yielded a notably low forecast error of 10.81 across the test periods.
+
+Unlike Approach 1, which relied on model combination techniques, Approach 2 highlighted the superiority of a single, carefully chosen model in effectively capturing the underlying patterns present within the dataset.
+
+Interpretation of Results:
+
+The key insight derived from these results is that, within the context of forecasting for the provided dataset (AirPassengers), Approach 2, identified a single model, namely MAM, that consistently produced the most accurate forecasts.
+
+This finding challenges the conventional belief that ensemble or combined forecasting models are universally superior. Instead, it underscores the critical importance of meticulous model selection and testing methodologies. Approach 2 demonstrates that an appropriately selected individual model, such as MAM, can surpass combined models when tailored to the specific characteristics of the dataset.
+
+The success of MAM in Approach 2 underscores its potential as a valuable forecasting tool, offering enhanced forecast accuracy and operational efficiency for practical applications.
+
+In summary, the results within the context of Approach 1 and Approach 2 highlight a substantial shift in forecasting performance. Approach 2, showcases the emergence of a single, superior model (MAM), emphasizing the significance of data-driven model selection and demonstrating that simplicity and meticulous model choice can profoundly impact forecasting accuracy in real-world scenarios.
 :::
