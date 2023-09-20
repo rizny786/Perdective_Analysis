@@ -597,7 +597,7 @@ The comparative analysis of the initial and revised results underscores the prof
 ## Question 2
 
 ::: {style="color:blue"}
-For this question, I'm comparing AIC weight approach with Rolling origin approach, \
+For this question, I'm comparing AIC weight approach with Rolling origin approach,\
 So I'll be creating same trend, season model's ("AAA","MAM","MMM"), with and without damped models. Also using the same -In and -Out sample split.
 :::
 

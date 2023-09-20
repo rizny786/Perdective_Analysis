@@ -1,0 +1,739 @@
+---
+title: "Regression modelling in R"
+author: "Rizny Mubarak"
+output:
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+  html_document:
+    toc: yes
+    toc_depth: '4'
+    df_print: paged
+  geometry: margin=0.5in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Lab Experiment
+
+### Load dataset
+
+```{r}
+if (!("mlbench" %in% rownames(installed.packages()))){
+  install.packages("mlbench")
+}
+library(mlbench)
+```
+
+```{r}
+data(BostonHousing2)
+x <- BostonHousing2
+x <- x[,-5]
+```
+
+-   Check first 5 rows of data
+
+```{r}
+head(x)
+```
+
+-   Convert to Dataframe
+
+```{r}
+x <- as.data.frame(x)
+```
+
+-   Check the class of all columns
+
+```{r}
+lapply(x,class)
+```
+
+-   Get all the numeric columns indexs
+
+```{r}
+idxNum <- unlist(lapply(x,class)) == "numeric"
+```
+
+### Data exploration
+
+-   Find Correlations
+
+```{r}
+cor(x[,idxNum])
+```
+
+```{r}
+a <- x[,3] 
+b <- x[,4] 
+cor(a,b)   
+```
+
+-   Plot correlations
+
+```{r}
+plot(x[,idxNum])
+```
+
+-   Scatter plot with two variables
+
+```{r}
+plot(a,b)
+```
+
+-   Scatter plot with colors
+
+```{r}
+plot(a,b,pch=19,col="blue")
+```
+
+-   Plot scatter plot targets vs input variables
+
+```{r}
+tempY <- x[,5] # Starget cmedv
+tempX <- (x[,idxNum])[,-3] # numerical inputs 
+
+# Now we produce all the plots
+for (i in 1:ncol(tempX)){ # Iterate for each column in tempX
+  plot(tempX[,i],tempY,xlab=colnames(tempX)[i],ylab="cmedv")
+}
+```
+
+-   Observation
+
+    -   some nice linear relations;
+
+    -   lots of noise;
+
+    -   some potentially problematic variables (non-linear relations).
+
+### Building a regression model
+
+-   Regression Sales on Price
+
+```{r}
+fit1 <- lm(cmedv ~ lstat, data=x)
+fit1
+```
+
+-   Summary of fit1
+
+```{r}
+summary(fit1)
+```
+
+-   Store summary of fit1 to sum1
+
+```{r}
+sum1 <- summary(fit1)
+```
+
+```{r}
+names(sum1)
+```
+
+For future reference: within a list you can save any type of variables. These could be vectors, arrays, lists, data.frames, etc. For example, we extract the p-values and test them at 5% significance.
+
+-   Fit1 coeffients
+
+```{r}
+# print coeffients
+sum1$coefficients
+```
+
+-   Evaluate P-Value
+
+```{r}
+pval <- sum1$coefficients[,4]
+pval <= 0.05
+```
+
+-   Store fit1 $R^{2}$
+
+```{r}
+fit1r2 <- sum1$r.squared
+fit1r2
+```
+
+-   Store AIC
+
+```{r}
+fit1aic <- AIC(fit1)
+fit1aic
+```
+
+-   Sales on Revenue
+
+```{r}
+# Regress sales on revenue
+fit2 <- lm(cmedv~lat,data=x) # Fit the regression model
+sum2 <- summary(fit2) # Get summary statistics
+sum2
+
+# Get R^2 and AIC
+fit2r2 <- sum2$r.squared
+fit2aic <- AIC(fit2)
+
+# Test coefficients
+sum2$coefficients[,4] <= 0.05
+```
+
+-   Fit2 Coefficients
+
+```{r}
+sum2$coefficients
+```
+
+-   $R^{2}$ Fit1 vs Fit2
+
+```{r}
+r2 <- c(fit1r2,fit2r2)
+r2
+```
+
+-   $R^{2}$ value rounding with different decimal places
+
+```{r}
+round(r2,2)
+```
+
+```{r}
+names(r2) <- c("lstat","lat")
+round(r2,3)
+```
+
+-   AIC Comparison
+
+```{r}
+aic <- c(fit1aic,fit2aic)
+names(aic) <- names(r2)
+round(aic,3)
+```
+
+-   Sales on Town
+
+```{r}
+# Regress sales on town
+fit3 <- lm(cmedv~town,data=x) # Fit the regression model
+sum3 <- summary(fit3) # Get summary statistics
+sum3
+
+# Get R^2 and AIC
+fit3r2 <- sum3$r.squared
+fit3aic <- AIC(fit3)
+```
+
+-   Sales on Price with and without Intercept
+
+```{r}
+# Model with intercept
+lm(cmedv ~ lstat, data=x)
+# Model without intercept
+lm(cmedv ~ 0 + lstat, data=x)
+```
+
+Observe that the second model, which uses 0 + ... in the formula, removes the intercept.
+
+### Multiple regression
+
+-   Sales on Price + Revenue
+
+```{r}
+fit4 <- lm(cmedv~lstat+lat,data=x)
+sum4 <- summary(fit4)
+sum4
+```
+
+-   Sales vs Random inputs - Demonstrate $R^{2}$ variations
+
+```{r}
+# Create a variable yy that includes the first 10 values of 
+# cmedv, our target variable
+yy <- x[,colnames(x)=="cmedv"]
+yy <- yy[1:10]
+# Now create a matrix with 9 columns of random data
+# The function runif() creates random draws from a uniform
+# distirbution
+xx <- matrix(runif(90),ncol=9) # Draw 100 values and put them 
+                               # in a matrix with 10 columns
+# Loop for all regressions from 1 to 9 inputs
+ftemp <- list() # Pre-allocate a list to save the results
+for (i in 1:9){
+  ftemp[[i]] <- lm(yy ~xx[,1:i])
+}
+# Get R-squared from all models
+r2temp <- unlist(lapply(ftemp,function(x){summary(x)$r.squared}))
+plot(1:9,r2temp,xlab="Number of random inputs",ylab="R-squared",main="Oh dear...")
+```
+
+-   AIC vlues
+
+```{r}
+sapply(ftemp,AIC)
+```
+
+-   Error fitted values
+
+```{r}
+yy - ftemp[[9]]$fitted.values
+```
+
+-   Model with just a constant
+
+```{r}
+ftemp[[10]] <- lm(yy~1) # This means just fit a constant
+sapply(ftemp,AIC)
+```
+
+-   Check $R^{2}$
+
+```{r}
+unlist(lapply(ftemp,function(x){summary(x)$r.squared}))
+```
+
+### Variable selection
+
+-   cmedv vs all variables
+
+```{r}
+fit5 <- lm(cmedv~.,data=x)
+summary(fit5)
+```
+
+-   cmedv with only intercept - fitmin
+
+```{r}
+fitmin <- lm(cmedv~1,data=x) # This means use only an intercept.
+```
+
+-   Bidirectional model combining fitmin and fit5(all)
+
+```{r}
+fit6 <- step(fitmin,direction="both",scope=formula(fit5))
+```
+
+-   Fit6 summary
+
+```{r}
+summary(fit6)
+```
+
+-   Forward directional model combining fitmin and fit5(all)
+
+```{r}
+fit7 <- step(fitmin,direction="forward",scope=formula(fit5))
+```
+
+-   Summary of Forward directional model fit7
+
+```{r}
+summary(fit7)
+```
+
+-   Backward directional model combining fitmin and fit5(all)
+
+```{r}
+fit8 <- step(fit5,direction="backward",scope=formula(fit5))
+```
+
+-   Summary backward directional model
+
+```{r}
+summary(fit8)
+```
+
+-   Compare fit1, fit2, fit5, fit6, fit7 and fit8
+
+```{r}
+aic <- c(AIC(fit1),AIC(fit2),AIC(fit5),AIC(fit6),AIC(fit7),AIC(fit8))
+names(aic) <- c(formula(fit1),formula(fit2),"Full model","Stepwise","Forward","Backward")
+round(aic,4)
+```
+
+-   Summary of Fit6
+
+```{r}
+plot(fit6)
+```
+
+-   Fit all the plots for fit6
+
+```{r}
+par(mfrow=c(2,2)) 
+plot(fit6) # Plot
+par(mfrow=c(1,1)) 
+```
+
+```{r}
+resid <- fit6$residuals
+fitted <- fit6$fitted.values
+```
+
+And produce the plots
+
+```{r}
+par(mfrow=c(2,2))
+plot(fitted,resid)        # Scatter plot fitted vs. residuals
+plot(x$lstat,resid)       # Scatter plot lstat vs. residuals
+plot(x$lat,resid)         # Scatter lat vs. residuals
+hist(resid,100)           # Historgram of residuals with 100 bins
+par(mfrow=c(1,1))
+```
+
+### Predicting with regression
+
+-   Split data train and test
+
+```{r}
+idx <- sort(sample(1:nrow(x),100))
+xTest <- x[idx,]
+xTrain <- x[-idx,]
+```
+
+-   Fit the model - cmedv \~ lstat + lat
+
+```{r}
+fitTrain <- lm(cmedv ~ lstat + lat, data=xTrain)
+fitTrain
+```
+
+-   Predict with test data.
+
+```{r}
+predict(fitTrain,newdata=xTest)
+```
+
+-   Predict training data
+
+```{r}
+predict(fitTrain) 
+```
+
+### Using regression for hypothesis testing
+
+-   Three random sample with different mean and sd.
+
+```{r}
+set.seed(1)
+x1 <- rnorm(50,mean=20,sd=10)
+x2 <- rnorm(50,mean=30,sd=10)
+x3 <- rnorm(50,mean=21,sd=10)
+```
+
+-   Compare x1 and x2
+
+```{r}
+x1x2 <- c(x1,x2)
+id12 <- c(rep(1,length(x1)),rep(2,length(x2))) # rep() repeats a number as many times as the 2nd argument instructs. 
+id12 <- as.factor(id12)
+id12
+```
+
+-   Build regression model
+
+```{r}
+summary(lm(x1x2~id12))
+```
+
+-   Compare x1 and x2 mean values
+
+```{r}
+mean(x1)
+mean(x2)-mean(x1)
+```
+
+-   Regression model with x1 and x3
+
+```{r}
+x1x3 <- c(x1,x3)
+id13 <- c(rep(1,length(x1)),rep(3,length(x3)))
+id13 <- as.factor(id13)
+summary(lm(x1x3~id13))
+```
+
+-   Regression with x1,x2, and x3
+
+```{r}
+x1x2x3 <- c(x1,x2,x3)
+id123 <- c(rep(1,length(x1)),rep(2,length(x1)),rep(3,length(x3)))
+id123 <- as.factor(id123)
+summary(lm(x1x2x3~id123))
+```
+
+-   Regression model with x1 and x4 ( different sample sizes)
+
+```{r}
+x4 <- rnorm(10,mean=30,sd=10) # Only 10 observations
+x1x4 <- c(x1,x4)
+id14 <- c(rep(1,length(x1)),rep(2,length(x4))) # I can use any numbers I want, they do not mean anything!
+id14 <- as.factor(id14)
+summary(lm(x1x4~id14))
+```
+
+Works just fine! We model the means, so the number of observations will only help with better estimates of the coefficients, but not with the design of the comparison itself.
+
+# 2. Exercises for regression building.
+
+**I utilize two distinct samples in order to assess and contrast the adequacy of the model fit as well as the accuracy of the model predictions.**
+
+### 1. Data Processing
+
+```{r}
+data(BostonHousing2)
+x <- BostonHousing2
+x <- x[,-5]
+```
+
+-   Convert to Data frame and name as df
+
+```{r}
+x <- as.data.frame(x)
+```
+
+**Note:** In the laboratory experiment model that we constructed using the stepwise method, we have substantiated that the 'town' variable holds less significance in predicting Boston housing prices, as it led to a notable increase in prediction errors. Therefore, for the upcoming exercise, I will proceed without factoring in the 'town' variable.
+
+-   Remove town column
+
+```{r}
+
+# Define the list of columns to keep in the samples (exclude "town")
+columns_to_keep <- colnames(x)[!colnames(x) %in% c("town")]
+```
+
+-   Split data & store in a list
+
+```{r}
+# Set the seed for reproducibility
+set.seed(123)
+
+# Define the sample sizes
+sample_sizes <- c(50, 100)
+
+# Initialize empty data frames to store the datasets
+xTest <- list()
+xTrain <- list()
+
+# Loop through each sample size
+for (i in 1:length(sample_sizes)) {
+  size <- sample_sizes[i]
+  
+  # Generate random indices
+  idx <- sort(sample(1:nrow(x), size))
+  
+  # Create test and train datasets for the current size
+  xTest[[i]] <- x[idx, columns_to_keep]
+  xTrain[[i]] <- x[-idx, columns_to_keep]
+}
+```
+
+### 2. Modeling
+
+#### Min Model - fit_min
+
+```{r}
+fit_min <- list()
+fit_min[[1]] <- lm(cmedv ~ 1, data=xTrain[[1]])
+fit_min[[2]] <- lm(cmedv ~ 1, data=xTrain[[2]])
+
+summary(fit_min[[1]])
+summary(fit_min[[2]])
+```
+
+#### Full model - fit_full
+
+```{r}
+fit_full <- list()
+fit_full[[1]] <- lm(cmedv ~ ., data=xTrain[[1]])
+fit_full[[2]] <- lm(cmedv ~ ., data=xTrain[[2]])
+
+summary(fit_full[[1]])
+summary(fit_full[[2]])
+```
+
+#### Best model - fit_best(direction - both)
+
+```{r}
+fit_best <- list()
+fit_best[[1]] <- step(fit_min[[1]], direction = "both", scope = formula(fit_full[[1]]), trace = 0)
+
+fit_best[[2]] <- step(fit_min[[2]], direction = "both", scope = formula(fit_full[[2]]), trace = 0)
+
+summary(fit_best[[1]])
+summary(fit_best[[2]])
+```
+
+#### Best model - fit_best_f(direction - forward)
+
+```{r}
+fit_best_f <- list()
+fit_best_f[[1]] <- step(fit_min[[1]], direction = "forward", scope = formula(fit_full[[1]]), trace = 0)
+
+fit_best_f[[2]] <- step(fit_min[[2]], direction = "forward", scope = formula(fit_full[[2]]), trace = 0)
+
+summary(fit_best_f[[1]])
+summary(fit_best_f[[2]])
+
+```
+
+#### Best model - fit_best_b(direction - backward)
+
+```{r}
+fit_best_b <- list()
+fit_best_b[[1]] <- step(fit_full[[1]], direction = "backward", scope = formula(fit_full[[1]]), trace = 0)
+
+fit_best_b[[2]] <- step(fit_full[[2]], direction = "backward", scope = formula(fit_full[[2]]), trace = 0)
+
+summary(fit_best_b[[1]])
+summary(fit_best_b[[2]])
+```
+
+### 3. Model Selection
+
+```{r}
+aic <- list()
+aic[[1]] <- c(AIC(fit_min[[1]]),AIC(fit_full[[1]]),AIC(fit_best[[1]]),AIC(fit_best_f[[1]]),AIC(fit_best_f[[1]]))
+
+aic[[1]] <- round(aic[[1]],4)
+
+aic[[2]] <- c(AIC(fit_min[[2]]),AIC(fit_full[[2]]),AIC(fit_best[[2]]),AIC(fit_best_f[[2]]),AIC(fit_best_f[[2]]))
+
+aic[[2]] <- round(aic[[2]],4)
+
+# Combine the list of data frames into a single dataframe
+aic_df <- do.call(rbind, aic)
+
+
+# Add column names to the dataframe
+colnames(aic_df) <- c("Min", "Full", "Bi-Direction", "Forward", "Backward")
+
+# Define row names
+row_names <- c("Sample 50", "Sample 100")
+
+# Set row names for the dataframe
+rownames(aic_df) <- row_names
+
+
+print(as.data.frame(aic_df))
+
+```
+
+```{r}
+library(Metrics)
+```
+
+### 4. Predictions
+
+-   Calculate RMSE
+
+```{r}
+rmse_min <- list()
+rmse_full <- list()
+rmse_best <- list()
+
+# Calculate RMSE for each model
+rmse_min[[1]] <-
+  rmse(predict(fit_min[[1]], newdata = xTest[[1]]), xTest[[1]]$cmedv)
+rmse_min[[2]] <-
+  rmse(predict(fit_min[[2]], newdata = xTest[[2]]), xTest[[2]]$cmedv)
+
+rmse_full[[1]] <-
+  rmse(predict(fit_full[[1]], newdata = xTest[[1]]), xTest[[1]]$cmedv)
+rmse_full[[2]] <-
+  rmse(predict(fit_full[[2]], newdata = xTest[[2]]), xTest[[2]]$cmedv)
+
+rmse_best[[1]] <-
+  rmse(predict(fit_best[[2]], newdata = xTest[[1]]), xTest[[1]]$cmedv)
+rmse_best[[2]] <-
+  rmse(predict(fit_best[[2]], newdata = xTest[[2]]), xTest[[2]]$cmedv)
+
+# Combine RMSE values into a matrix
+rmse_matrix <- matrix(unlist(c(rmse_min, rmse_full, rmse_best)), nrow = 2, byrow = TRUE)
+
+# Add column and row names
+colnames(rmse_matrix) <- c("Min Model", "Full Model", "Best Model")
+rownames(rmse_matrix) <- c("Sample 1", "Sample 2")
+
+# Convert the matrix to a dataframe
+rmse_df <- as.data.frame(rmse_matrix)
+
+```
+
+#### Print and compare results
+
+```{r}
+# Print the dataframe
+print(rmse_df)
+```
+
+::: {style="color: green"}
+After conducting a comprehensive analysis of the errors, it has been ascertained that the best-performing model consistently exhibits superior predictive capabilities. In order to gain further insights into the predictive accuracy of this model, we have undertaken the task of visualizing the distribution of errors through the creation of residual plots.
+:::
+
+```{r}
+# Generate residuals for Sample 1 and Sample 2
+residuals_sample1 <- resid(fit_best[[1]])
+residuals_sample2 <- resid(fit_best[[2]])
+
+# Create a 2x2 grid for the residual plots
+par(mfrow = c(2, 2))
+
+# Residual vs. Fitted Values Plot for Sample 1
+plot(predict(fit_best[[1]]), residuals_sample1, 
+     xlab = "Fitted Values", ylab = "Residuals", 
+     main = "Residual Plot - Sample 1")
+abline(h = 0, col = "red")
+
+# Normal Q-Q Plot for Sample 1
+qqnorm(residuals_sample1, main = "Normal Q-Q Plot - Sample 1")
+qqline(residuals_sample1, col = "red")
+
+# Scale-Location Plot for Sample 1
+sqrt_abs_residuals_sample1 <- sqrt(abs(residuals_sample1))
+plot(predict(fit_best[[1]]), sqrt_abs_residuals_sample1, 
+     xlab = "Fitted Values", ylab = "Residuals", 
+     main = "Scale-Location Plot - Sample 1")
+abline(h = 0, col = "red")
+
+# Residuals vs. Leverage Plot for Sample 1
+plot(hatvalues(fit_best[[1]]), residuals_sample1, 
+     xlab = "Leverage", ylab = "Residuals", 
+     main = "Residuals vs. Leverage Plot - Sample 1")
+abline(h = 0, col = "red")
+
+# Residual vs. Fitted Values Plot for Sample 2
+plot(predict(fit_best[[2]]), residuals_sample2, 
+     xlab = "Fitted Values", ylab = "Residuals", 
+     main = "Residual Plot - Sample 2")
+abline(h = 0, col = "red")
+
+# Normal Q-Q Plot for Sample 2
+qqnorm(residuals_sample2, main = "Normal Q-Q Plot - Sample 2")
+qqline(residuals_sample2, col = "red")
+
+# Scale-Location Plot for Sample 2
+sqrt_abs_residuals_sample2 <- sqrt(abs(residuals_sample2))
+plot(predict(fit_best[[2]]), sqrt_abs_residuals_sample2, 
+     xlab = "Fitted Values", ylab = "Residuals", 
+     main = "Scale-Location Plot - Sample 2")
+abline(h = 0, col = "red")
+
+# Residuals vs. Leverage Plot for Sample 2
+plot(hatvalues(fit_best[[2]]), residuals_sample2, 
+     xlab = "Leverage", ylab = "Residuals", 
+     main = "Residuals vs. Leverage Plot - Sample 2")
+abline(h = 0, col = "red")
+
+# Reset the plotting layout
+par(mfrow = c(1, 1))
+
+```
+
+### 5. Conclusion
+
+::: {style="color:green"}
+In summary, we conducted an extensive model analysis, including "Min," "Full," "Bi-Direction," "Forward," and "Backward" models. Upon evaluating the models, we discovered that the AIC values for "Bi-Direction," "Forward," and "Backward" were identical. Consequently, we opted to focus exclusively on the "Bi-Direction" model for further evaluation, alongside the "Min" and "Full" models. After comparing the RMSE values, it became evident that the "Bi-Direction" model consistently exhibited the best predictive performance.
+
+To gain deeper insights, we examined residual plots, which confirmed the well-distributed nature of errors in the "Bi-Direction" model. In conclusion, the "Bi-Direction" model stands out as the optimal choice for our dataset, demonstrating superior accuracy and robustness in predicting outcomes.
+:::
