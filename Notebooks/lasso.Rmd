@@ -1,0 +1,140 @@
+---
+title: "Lasso regression modelling"
+author: "Rizny Mubarak"
+output: pdf_document
+---
+
+### 1. Load Data
+
+```{r}
+x <- ts(read.csv("./walmart.csv"),frequency=4,start=c(2003,1))
+plot(x[,1],ylab="Walmart sales")
+
+```
+
+### 2. Build a benchmark regression
+
+```{r}
+y.trn <- window(x[,1],end=c(2013,4))
+y.tst <- window(x[,1],start=c(2014,1))
+```
+
+```{r}
+n <- length(y.trn)
+X <- array(NA,c(n,6))
+# Loop to create lags
+for (i in 1:6){
+X[i:n,i] <- y.trn[1:(n-i+1)]
+}
+#Name the columns
+colnames(X) <- c("y",paste0("lag",1:5))
+X <- as.data.frame(X)
+head(X)
+```
+
+```{r}
+# The complete model
+fit1 <- lm(y~.,data=X)
+# The stepwise model
+fit2 <- step(fit1,trace=0)
+summary(fit2)
+```
+
+```{r}
+# In-sample fit:
+plot(X$y,type="l")
+frc <- predict(fit2,X)
+lines(frc,col="red")
+```
+
+```{r}
+# Initialise an array to save the forecasts
+frc1 <- array(NA,c(8,1))
+for (i in 1:8){
+# For the Xnew we use the last five observations as before
+Xnew <- tail(y.trn,5)
+# Add to that the forecasted values
+Xnew <- c(Xnew,frc1)
+# Take the relevant 5 values. The index i helps us to get the right ones
+Xnew <- Xnew[i:(4+i)]
+# If i = 1 then this becomes Xnew[1:5].
+# If i = 2 then this becomes Xnew[2:6] - just as the example above.
+# Reverse the order
+Xnew <- Xnew[5:1]
+# Make Xnew an array and name the inputs
+Xnew <- array(Xnew, c(1,5)) # c(1,5) are the dimensions of the array
+colnames(Xnew) <- paste0("lag",1:5) # I have already reversed the order
+# Convert to data.frame
+Xnew <- as.data.frame(Xnew)
+# Forecast
+frc1[i] <- predict(fit2,Xnew)
+}
+frc1
+```
+
+```{r}
+frc1 <- ts(frc1,frequency=frequency(y.tst),start=start(y.tst))
+ts.plot(y.trn,y.tst,frc1,col=c("black","black","red"))
+```
+
+### 3. Lasso regression
+
+```{r}
+library(glmnet)
+```
+
+```{r}
+xx <- as.matrix(X[-(1:5),-1])
+# For the target I retain only the first column
+yy <- as.matrix(X[-(1:5),1])
+```
+
+```{r}
+lasso <- cv.glmnet(x=xx,y=yy)
+```
+
+```{r}
+coef(lasso)
+```
+
+```{r}
+plot(lasso)
+```
+
+```{r}
+frc2 <- array(NA,c(8,1))
+for (i in 1:8){
+# Create inputs - note for lasso we do not transform these into data.frame
+Xnew <- c(tail(y.trn,5),frc2)
+Xnew <- (Xnew[i:(4+i)])[5:1]
+Xnew <- array(Xnew, c(1,5))
+colnames(Xnew) <- paste0("lag",1:5)
+# Forecast
+frc2[i] <- predict(lasso,Xnew)
+}
+```
+
+```{r}
+# Transform to time series
+frc2 <- ts(frc2,frequency=frequency(y.tst),start=start(y.tst))
+# Plot together with fit2
+ts.plot(y.trn,y.tst,frc1,frc2,col=c("black","black","red","blue"))
+legend("bottomright",c("OLS","Lasso"),col=c("red","blue"),lty=1)
+```
+
+```{r}
+ridge <- cv.glmnet(x=xx,y=yy,alpha=0)
+coef(ridge)
+```
+
+```{r}
+cc <- as.matrix(cbind(coef(lasso),coef(ridge)))
+colnames(cc) <- c("lasso","ridge")
+round(cc,3)
+```
+
+### 4. Exercises on lasso regression
+
+```{r}
+
+```

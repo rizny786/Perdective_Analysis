@@ -1,0 +1,367 @@
+---
+title: "Regression modelling"
+author: "Rizny Mubarak"
+output: pdf_document
+---
+
+### 1. Advanced regression modelling
+
+```{r}
+x <- ts(read.csv("./walmart.csv"),frequency=4,start=c(2003,1))
+# Print the first 10 rows
+x[1:10,]
+```
+
+```{r}
+plot(x[,1],ylab="Walmart sales")
+```
+
+```{r}
+y.trn <- window(x[,1],end=c(2013,4))
+y.tst <- window(x[,1],start=c(2014,1))
+```
+
+```{r}
+pacf(y.trn)
+```
+
+```{r}
+acf(y.trn)
+```
+
+### 2. Construct lags
+
+```{r}
+n <- length(y.trn)
+n
+```
+
+```{r}
+X <- array(NA,c(n,6))
+```
+
+```{r}
+
+for (i in 1:6){
+X[i:n,i] <- y.trn[1:(n-i+1)]
+}
+# Name the columns
+colnames(X) <- c("y",paste0("lag",1:5))
+X[1:10,]
+```
+
+```{r}
+X[(n-9):n,]
+```
+
+```{r}
+X <- as.data.frame(X)
+plot(X)
+```
+
+```{r}
+plot(AirPassengers)
+```
+
+```{r}
+plot(log(AirPassengers))
+```
+
+```{r}
+plot(diff(log(AirPassengers)))
+```
+
+```{r}
+# The complete model
+fit1 <- lm(y~.,data=X)
+summary(fit1)
+```
+
+```{r}
+# The stepwise model
+fit2 <- step(fit1,trace = 0)
+summary(fit2)
+```
+
+```{r}
+c(AIC(fit1),AIC(fit2))
+```
+
+```{r}
+# In-sample fit:
+plot(X$y,type="l")
+frc <- predict(fit2,X)
+lines(frc,col="red")
+```
+
+```{r}
+Xnew <- array(tail(y.trn,5),c(1,5))
+colnames(Xnew) <- paste0("lag",5:1) # Note that I invert the order.
+Xnew <- as.data.frame(Xnew)
+Xnew
+```
+
+```{r}
+predict(fit2,Xnew)
+```
+
+```{r}
+frc1 <- array(NA,c(8,1))
+```
+
+```{r}
+Xnew <- tail(y.trn,5)
+Xnew <- Xnew[5:1]
+Xnew
+```
+
+```{r}
+formula(fit2)
+```
+
+```{r}
+Xnew <- c(Xnew, frc1)
+Xnew
+```
+
+```{r}
+frc1 <- array(NA,c(8,1))
+for (i in 1:8){
+Xnew <- tail(y.trn,5)
+Xnew <- c(Xnew,frc1)
+Xnew <- Xnew[i:(4+i)]
+Xnew <- Xnew[5:1]
+Xnew <- array(Xnew, c(1,5)) 
+colnames(Xnew) <- paste0("lag",1:5) 
+Xnew <- as.data.frame(Xnew)
+# Forecast
+frc1[i] <- predict(fit2,Xnew)
+}
+frc1
+```
+
+```{r}
+frc1 <- ts(frc1,frequency=frequency(y.tst),start=start(y.tst))
+```
+
+```{r}
+ts.plot(y.trn,y.tst,frc1,col=c("black","black","red"))
+```
+
+### 3. Seasonality with dummy variables
+
+```{r}
+D <- rep(1:4,11) # Replicate 1:4 11 times
+D <- factor(D)
+D
+```
+
+```{r}
+factor(rep(c("Q1","Q2","Q3","Q4"),11))
+```
+
+```{r}
+X2 <- cbind(X,D)
+colnames(X2) <- c(colnames(X2)[1:6],"D")
+X2
+```
+
+```{r}
+fit3 <- lm(y~.,data=X2)
+summary(fit3)
+```
+
+```{r}
+# Find NA in X2
+idx <- is.na(X2)
+# The result is logical TRUE/FALSE values
+idx[1:10,]
+```
+
+```{r}
+idx <- rowSums(idx)
+idx
+```
+
+```{r}
+idx <- idx == 0
+idx
+```
+
+```{r}
+fit_temp <- lm(y~.,data=X2[idx,])
+# fit_temp is the same as fit3, without the first NA part
+fit4 <- step(fit_temp,trace = 0)
+summary(fit4)
+```
+
+```{r}
+c(AIC(fit2),AIC(fit4))
+```
+
+```{r}
+frc <- predict(fit4,X2)
+ts.plot(y.trn,frc,col=c("black","red"))
+```
+
+```{r}
+frc2 <- array(NA,c(8,1))
+for (i in 1:8){
+Xnew <- tail(y.trn,5)
+Xnew <- c(Xnew,frc2)
+Xnew <- Xnew[i:(4+i)]
+Xnew <- Xnew[5:1]
+Xnew <- array(Xnew, c(1,5))
+colnames(Xnew) <- paste0("lag",1:5)
+Xnew <- as.data.frame(Xnew)
+D <- as.factor(rep(1:4,2)[i])
+Xnew <- cbind(Xnew,D)
+# Forecast
+frc2[i] <- predict(fit4,Xnew)
+}
+```
+
+```{r}
+cbind(frc1, frc2)
+```
+
+```{r}
+# Transform to time series
+frc2 <- ts(frc2,frequency=frequency(y.tst),start=start(y.tst))
+# Plot
+ts.plot(y.trn,y.tst,frc1,frc2,col=c("black","black","red","blue"))
+legend("bottomright",c("Autoregressive","Dummies"),col=c("red","blue"),lty=1)
+```
+
+### 4. Modelling in differences (handling trends)
+
+```{r}
+X3 <- X
+```
+
+```{r}
+# The function ncol() counts how many columns
+for (i in 1:ncol(X3)){
+X3[,i] <- c(NA,diff(X3[,i]))
+20
+}
+print(X3)
+```
+
+```{r}
+summary(lm(y~.,X3))
+```
+
+```{r}
+fit5 <- step(lm(y~.,X3), trace = 0)
+summary(fit5)
+```
+
+```{r}
+frc3 <- array(NA,c(8,1))
+for (i in 1:8){
+y.diff <- diff(y.trn)
+Xnew <- tail(y.diff,5)
+Xnew <- c(Xnew,frc3)
+Xnew <- Xnew[i:(4+i)]
+Xnew <- Xnew[5:1]
+Xnew <- array(Xnew, c(1,5))
+colnames(Xnew) <- paste0("lag",1:5)
+Xnew <- as.data.frame(Xnew)
+# Forecast
+frc3[i] <- predict(fit5,Xnew)
+}
+```
+
+```{r}
+# Transform to time series
+frc3 <- ts(frc3,frequency=frequency(y.tst),start=start(y.tst))
+# Plot
+ts.plot(diff(y.trn),frc3,col=c("black","red"))
+```
+
+```{r}
+frc3ud <- cumsum(c(tail(y.trn,1),frc3))
+
+```
+
+```{r}
+frc3ud <- frc3ud[-1]
+```
+
+```{r}
+frc3ud <- ts(frc3ud,frequency=frequency(y.tst),start=start(y.tst))
+ts.plot(y.trn,y.tst,frc1,frc2,frc3ud,col=c("black","black","red","blue","magenta"))
+legend("bottomright",c("Autoregressive","Dummies","Difference"),col=c("red","blue","magenta"),lty=1)
+```
+
+```{r}
+actual <- matrix(rep(y.tst,3),ncol=3)
+actual
+```
+
+```{r}
+error <- abs(actual - cbind(frc1,frc2,frc3ud))
+MAE <- colMeans(error)
+MAE
+```
+
+```{r}
+plot(as.vector(x[,2]),as.vector(x[,1]),ylab="Sales",xlab="GDP")
+abline(lm(x[,1]~x[,2]),col="red")
+```
+
+```{r}
+plot(as.vector(diff(x[,2])),as.vector(diff(x[,1])),xlab="Sales",ylab="GDP")
+abline(lm(diff(x[,1])~diff(x[,2])),col="red")
+```
+
+```{r}
+gdp <- c(NA,diff(x[1:(length(x[,2])-8),2]))
+# Construct inputs for regression
+X4 <- cbind(X3,gdp)
+fit6 <- step(lm(y~.,X4[-(1:6),]),trace = 0) # Remove NA
+summary(fit6)
+```
+
+```{r}
+frc4 <- array(NA,c(8,1))
+for (i in 1:8){
+y.diff <- diff(y.trn)
+# Create lags - same as before
+Xnew <- tail(y.diff,5)
+Xnew <- c(Xnew,frc3)
+Xnew <- Xnew[i:(4+i)]
+Xnew <- Xnew[5:1]
+
+Xgdp <- tail(gdp,9)
+
+Xgdp <- diff(Xgdp)
+# Use only the i th value
+Xgdp <- Xgdp[i]
+# Bind to Xnew
+Xnew <- c(Xnew,Xgdp)
+# Name things
+Xnew <- array(Xnew, c(1,6))
+colnames(Xnew) <- c(paste0("lag",1:5),"gdp")
+Xnew <- as.data.frame(Xnew)
+# Forecast
+frc4[i] <- predict(fit6,Xnew)
+}
+```
+
+```{r}
+frc4ud <- cumsum(frc4) + as.vector(tail(y.trn,1))
+```
+
+```{r}
+frc4ud <- ts(frc4ud,frequency=frequency(y.tst),start=start(y.tst))
+ts.plot(y.trn,y.tst,frc1,frc2,frc3ud,frc4ud,col=c("black","black","red","blue","magenta","brown"))
+legend("bottomright",c("Autoregressive","Dummies","Difference","GDP"),col=c("red","blue","magenta","brown"),
+```
+
+```{r}
+c(MAE, mean(abs(y.tst-frc4ud)))
+```
+
+### 5. Exercises on regression
