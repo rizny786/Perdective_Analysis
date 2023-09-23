@@ -4,6 +4,8 @@ author: "Rizny Mubarak"
 output: pdf_document
 ---
 
+## 1. Lab Experiment 
+
 ### 1. Advanced regression modelling
 
 ```{r}
@@ -364,4 +366,313 @@ legend("bottomright",c("Autoregressive","Dummies","Difference","GDP"),col=c("red
 c(MAE, mean(abs(y.tst-frc4ud)))
 ```
 
-### 5. Exercises on regression
+## 2. Exercises on regression
+
+### 1. Question
+
+#### 1.1 Find lags
+
+-   Plot the data distribution
+
+```{r}
+plot(x[,2],ylab="Walmart GDP")
+```
+
+-   Train & test split
+
+```{r}
+y.trn <- window(x[,2],end=c(2013,4))
+y.tst <- window(x[,2],start=c(2014,1))
+```
+
+-   PACF
+
+```{r}
+pacf(y.trn)
+```
+
+-   ACF
+
+```{r}
+acf(y.trn)
+```
+
+#### 1.2 Construct lags
+
+```{r}
+n <- length(y.trn)
+n
+```
+
+```{r}
+X <- array(NA,c(n,2))
+```
+
+```{r}
+
+for (i in 1:2){
+X[i:n,i] <- y.trn[1:(n-i+1)]
+}
+# Name the columns
+colnames(X) <- c("y",paste0("lag",1))
+X[1:10,]
+```
+
+```{r}
+X[(n-9):n,]
+```
+
+-   Plot lags correlations
+
+```{r}
+X <- as.data.frame(X)
+plot(X)
+```
+
+#### 1.3 Lags - Models
+
+```{r}
+# The complete model
+fit1 <- lm(y~.,data=X)
+summary(fit1)
+```
+
+-   AIC
+
+```{r}
+AIC(fit1)
+```
+
+-   In-sample vs Fit
+
+```{r}
+# In-sample fit:
+plot(X$y,type="l")
+frc <- predict(fit1,X)
+lines(frc,col="red")
+```
+
+-   Hold last observation for forcasting
+
+```{r}
+Xnew <- array(tail(y.trn,1),c(1,1))
+colnames(Xnew) <- paste0("lag",1) 
+Xnew <- as.data.frame(Xnew)
+Xnew
+```
+
+-   Predict
+
+```{r}
+predict(fit1,Xnew)
+```
+
+-   Forecast
+
+```{r}
+frc1 <- array(NA,c(8,1))
+```
+
+```{r}
+Xnew <- c(Xnew, frc1)
+Xnew
+```
+
+```{r}
+frc1 <- array(NA,c(8,1))
+for (i in 1:8){
+Xnew <- tail(y.trn,1)
+Xnew <- c(Xnew,frc1)
+Xnew <- Xnew[i:(0+i)]
+Xnew <- array(Xnew, c(1,1)) 
+colnames(Xnew) <- paste0("lag",1) 
+
+# Convert to data.frame
+Xnew <- as.data.frame(Xnew)
+# Forecast
+frc1[i] <- predict(fit1,Xnew)
+}
+frc1
+```
+
+-   Plot forecast and test
+
+```{r}
+frc1 <- ts(frc1,frequency=frequency(y.tst),start=start(y.tst))
+ts.plot(y.trn,y.tst,frc1,col=c("black","black","red"))
+```
+
+#### 1.4  Trend - Models
+
+```{r}
+X1 <- X
+```
+
+```{r}
+for (i in 1:ncol(X1)){
+X1[,i] <- c(NA,diff(X1[,i]))
+}
+print(X1)
+```
+
+-   Build full regression
+
+```{r}
+fit2 <- lm(y~.,X1)
+summary(fit2)
+```
+
+```{r}
+frc2 <- array(NA,c(8,1))
+for (i in 1:8){
+y.diff <- diff(y.trn)
+
+Xnew <- tail(y.diff,1)
+Xnew <- c(Xnew,frc2)
+Xnew <- Xnew[i:(0+i)]
+Xnew <- Xnew[1]
+Xnew <- array(Xnew, c(1,1))
+colnames(Xnew) <- paste0("lag",1)
+Xnew <- as.data.frame(Xnew)
+
+# Forecast
+frc2[i] <- predict(fit2,Xnew)
+}
+```
+
+```{r}
+# Transform to time series
+frc2 <- ts(frc2,frequency=frequency(y.tst),start=start(y.tst))
+# Plot
+ts.plot(diff(y.trn),frc2,col=c("black","red"))
+```
+
+```{r}
+frc2ud <- cumsum(c(tail(y.trn,1),frc2))
+frc2ud <- frc2ud[-1]
+```
+
+```{r}
+frc2ud <- ts(frc2ud,frequency=frequency(y.tst),start=start(y.tst))
+ts.plot(y.trn,y.tst,frc1,frc2ud,col=c("black","black","red","magenta"))
+legend("bottomright",c("Autoregressive","Difference"),col=c("red","magenta"),lty=1)
+```
+
+-   Compare with the two forecasts
+
+```{r}
+actual <- matrix(rep(y.tst,2),ncol=2)
+actual
+```
+
+-   Calculate MAE
+
+```{r}
+error <- abs(actual - cbind(frc1,frc2ud))
+MAE <- colMeans(error)
+MAE
+
+```
+
+```{r}
+plot(as.vector(x[,1]),as.vector(x[,2]),ylab="GDP",xlab="Sales")
+abline(lm(x[,2]~x[,1]),col="red")
+```
+
+```{r}
+plot(as.vector(diff(x[,1])),as.vector(diff(x[,2])),xlab="Sales",ylab="GDP")
+abline(lm(diff(x[,2])~diff(x[,1])),col="red")
+```
+
+```{r}
+
+sales <- c(NA,diff(x[1:(length(x[,1])-8),1]))
+# Construct inputs for regression
+X2 <- cbind(X1,sales)
+fit3 <- lm(y~.,X2[-(1),]) # Remove NA
+```
+
+```{r}
+summary(fit3)
+```
+
+```{r}
+frc3 <- array(NA,c(8,1))
+for (i in 1:8){
+
+y.diff <- diff(y.trn)
+# Create lags - same as before
+Xnew <- tail(y.diff,1)
+Xnew <- c(Xnew,frc3)
+Xnew <- Xnew[i:(0+i)]
+
+
+Xsales <- tail(sales,9)
+Xsales <- diff(Xsales)
+# Use only the i th value
+Xsales <- Xsales[i]
+# Bind to Xnew
+Xnew <- c(Xnew,Xsales)
+# Name things
+Xnew <- array(Xnew, c(1,2))
+colnames(Xnew) <- c(paste0("lag",1),"sales")
+Xnew <- as.data.frame(Xnew)
+# Forecast
+frc3[i] <- predict(fit3,Xnew)
+}
+print(frc3)
+```
+
+```{r}
+frc3ud <- cumsum(frc3) + as.vector(tail(y.trn,1))
+```
+
+```{r}
+frc3ud <- ts(frc3ud,frequency=frequency(y.tst),start=start(y.tst))
+ts.plot(y.trn,y.tst,frc1,frc2ud,frc3ud,col=c("black","black","red","blue","magenta"))  
+
+legend("bottomright",c("Autoregressive","Difference","Sales"),col=c("red","blue","magenta"),lty=1)
+```
+
+```{r}
+c(MAE, mean(abs(y.tst-frc3ud)))
+```
+
+### 2. Question 2
+
+### 2.1 Exponential smoothing
+
+```{r}
+library(forecast)
+class(y.trn)
+```
+
+```{r}
+class(y.trn)
+```
+
+```{r}
+fit4 <- ets(y.trn)
+class(fit4)
+```
+
+```{r}
+frc4 <-forecast(fit4, h=8)
+frc4 <- frc4$mean
+print(frc4)
+```
+
+```{r}
+ts.plot(y.trn,y.tst,frc1,frc2ud,frc3ud,frc4,col=c("black","black","red","blue","magenta","green"))  
+
+legend("bottomright",c("Autoregressive","Difference","Sales","ETS"),col=c("red","blue","magenta","green"),lty=1)
+
+```
+
+```{r}
+c(MAE, frc3ud = mean(abs(y.tst-frc3ud)),fr4 =mean(abs(y.tst-frc4)))
+```
+
+::: {style="color: green"}
+OLS model(Trend difference model) is still the better.
+:::

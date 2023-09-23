@@ -135,6 +135,74 @@ round(cc,3)
 
 ### 4. Exercises on lasso regression
 
+#### 4.1 Ridge regression
+
+-   Forecast
+
 ```{r}
+frc3 <- array(NA,c(8,1))
+for (i in 1:8){
+# Create inputs - note for lasso we do not transform these into data.frame
+Xnew <- c(tail(y.trn,5),frc2)
+Xnew <- (Xnew[i:(4+i)])[5:1]
+Xnew <- array(Xnew, c(1,5))
+colnames(Xnew) <- paste0("lag",1:5)
+# Forecast
+frc3[i] <- predict(ridge,Xnew)
+}
 
 ```
+
+-   Plot Ridge with other forecasts
+
+```{r}
+frc3 <- ts(frc3,frequency=frequency(y.tst),start=start(y.tst))
+# Plot together with fit2
+ts.plot(y.trn,frc1,frc2,frc3,col=c("black","black","red","blue","magenta"))
+legend("bottomright",c("OLS","Lasso","Ridge"),col=c("red","blue","magenta"),lty=1)
+```
+
+#### 4.2 Exponential smoothing
+
+```{r}
+library(forecast)
+```
+
+-   Fit the ETS Model
+
+```{r}
+fit4 <- ets(y.trn)
+summary(fit4)
+```
+
+-   Forecast using ETS
+
+```{r}
+frc4 <- forecast(fit4, h=8)
+frc4 <- frc4$mean
+```
+
+-   Plot ETS wit others
+
+```{r}
+# Plot together with fit2
+ts.plot(y.trn,y.tst,frc1,frc2,frc3,frc4,col=c("black","black","red","blue","magenta","green"))
+legend("bottomright",c("OLS","Lasso","Ridge","ETS"),col=c("red","blue","magenta","green"),lty=1)
+```
+
+#### 4.3 Calculate Error
+
+```{r}
+actual <- matrix(rep(y.tst,4),ncol=4)
+actual
+```
+
+```{r}
+error <- abs(actual - cbind(frc1,frc2,frc3,frc4))
+colnames(error) <- c("OLS", "Lasson", "Ridge", "ETS")
+MAE <- colMeans(error)
+MAE
+```
+
+::: {style="color:green"}
+:::
