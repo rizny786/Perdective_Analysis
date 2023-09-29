@@ -1,10 +1,13 @@
 ---
 title: "Regression modelling"
 author: "Rizny Mubarak"
-output: pdf_document
+output: 
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
 ---
 
-## 1. Lab Experiment 
+## 1. Lab Experiment
 
 ### 1. Advanced regression modelling
 
@@ -359,7 +362,7 @@ frc4ud <- cumsum(frc4) + as.vector(tail(y.trn,1))
 ```{r}
 frc4ud <- ts(frc4ud,frequency=frequency(y.tst),start=start(y.tst))
 ts.plot(y.trn,y.tst,frc1,frc2,frc3ud,frc4ud,col=c("black","black","red","blue","magenta","brown"))
-legend("bottomright",c("Autoregressive","Dummies","Difference","GDP"),col=c("red","blue","magenta","brown"),
+legend("bottomright",c("Autoregressive","Dummies","Difference","GDP"),col=c("red","blue","magenta","brown"))
 ```
 
 ```{r}
@@ -452,7 +455,7 @@ frc <- predict(fit1,X)
 lines(frc,col="red")
 ```
 
--   Hold last observation for forcasting
+-   Hold last observation for forecasting
 
 ```{r}
 Xnew <- array(tail(y.trn,1),c(1,1))
@@ -502,7 +505,7 @@ frc1 <- ts(frc1,frequency=frequency(y.tst),start=start(y.tst))
 ts.plot(y.trn,y.tst,frc1,col=c("black","black","red"))
 ```
 
-#### 1.4  Trend - Models
+#### 1.4 Trend - Models
 
 ```{r}
 X1 <- X
@@ -568,7 +571,7 @@ actual
 -   Calculate MAE
 
 ```{r}
-error <- abs(actual - cbind(frc1,frc2ud))
+error <- abs(actual - cbind(Autoregressive=frc1,Difference=frc2ud))
 MAE <- colMeans(error)
 MAE
 
@@ -589,7 +592,7 @@ abline(lm(diff(x[,2])~diff(x[,1])),col="red")
 sales <- c(NA,diff(x[1:(length(x[,1])-8),1]))
 # Construct inputs for regression
 X2 <- cbind(X1,sales)
-fit3 <- lm(y~.,X2[-(1),]) # Remove NA
+fit3 <- lm(y~.,X2[-(2),]) # Remove NA
 ```
 
 ```{r}
@@ -635,12 +638,13 @@ legend("bottomright",c("Autoregressive","Difference","Sales"),col=c("red","blue"
 ```
 
 ```{r}
-c(MAE, mean(abs(y.tst-frc3ud)))
+c(MAE, Sales=mean(abs(y.tst-frc3ud)))
+
 ```
 
 ### 2. Question 2
 
-### 2.1 Exponential smoothing
+#### 2.1 Exponential smoothing
 
 ```{r}
 library(forecast)
@@ -670,9 +674,13 @@ legend("bottomright",c("Autoregressive","Difference","Sales","ETS"),col=c("red",
 ```
 
 ```{r}
-c(MAE, frc3ud = mean(abs(y.tst-frc3ud)),fr4 =mean(abs(y.tst-frc4)))
+c(MAE, Sales = mean(abs(y.tst-frc3ud)),ETS =mean(abs(y.tst-frc4)))
 ```
 
+### Answer
+
 ::: {style="color: green"}
-OLS model(Trend difference model) is still the better.
+To support the study's conclusions, a comparative analysis was conducted between ETS and OLS regression models to determine the optimal forecasting model. Empirical evidence and evaluation metrics reveal that the **differenced OLS model** utilizing surpasses the ETS benchmark in this scenario, highlighting the practical and analytical advantages associated with this approach in modeling and forecasting observed data.
+
+The study encompassed a comprehensive evaluation of various forecasting methodologies, including autoregressive models applied to lagged GDP estimates, spanning an eight-quarter period. It became evident that these models consistently outperformed Exponential Smoothing, as indicated by the Mean Absolute Error (MAE) statistic and visual inspections employed as evaluation criteria.
 :::

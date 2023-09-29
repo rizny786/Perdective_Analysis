@@ -1,7 +1,10 @@
 ---
 title: "Lasso regression modelling"
 author: "Rizny Mubarak"
-output: pdf_document
+output: 
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
 ---
 
 ### 1. Load Data
@@ -204,5 +207,8 @@ MAE <- colMeans(error)
 MAE
 ```
 
+### 5. Answer
+
 ::: {style="color:green"}
+Among the models tested, the OLS model with autoregressive components emerged as the most predictive, exhibiting the lowest MAE and superior visual performance. In contrast, the Lasso model showed promise in feature selection and predictive precision but was less efficient than OLS. The ETS benchmark, renowned for accurate predictions, ranked third in performance, serving as a reliable reference despite not surpassing OLS and Lasso. However, despite its regularization advantages, the Ridge model demonstrated the lowest projected accuracy and poorest overall performance. In conclusion, this scientific study underscores the practical and analytical advantages of utilizing the OLS model with autoregressive components for precise sales value predictions, showcasing its effectiveness in capturing trends and correlations within sales data.
 :::

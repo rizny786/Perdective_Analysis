@@ -1,0 +1,102 @@
+---
+title: "Temporal hierarchies"
+author: "Rizny Mubarak"
+date: "2023-09-29"
+output: pdf_document
+---
+
+### 1. Data and packages
+
+```{r}
+pckg <- c("thief","MAPA","tsutils","abind")
+for (i in 1:length(pckg)){
+if(!(pckg[i] %in% rownames(installed.packages()))){
+install.packages(pckg[i])
+}
+library(pckg[i],character.only = TRUE)
+}
+```
+
+```{r}
+y <- AirPassengers
+```
+
+### 2. Temporal hierarchies using the thief package
+
+```{r}
+frc1 <- thief(y)
+plot(frc1)
+```
+
+```{r}
+frc2 <- thief(y,usemodel="arima")
+plot(frc2)
+```
+
+### 3. Manual implementation of THieF
+
+```{r}
+S <- tsutils::Sthief(y) # Get the S matrix
+ff <- frequency(y) # Get sampling frequency of target series
+AL <- ff/(1:ff) # Calculate frequencies of various aggregation levels
+AL <- AL[AL %% 1 == 0] # And exclude those that would not be integer
+k <- length(AL) # Find how many are left
+```
+
+```{r}
+Y <- MAPA::tsaggr(y,AL)[[1]]
+```
+
+```{r}
+hrz <- 16 # Target horizon
+hAggr <- (ceiling(hrz/ff)*ff)/AL
+hAggr
+```
+
+```{r}
+frc <- mse <- list()
+for (i in 1:k){
+yTemp <- Y[[i]]
+fit <- ets(yTemp)
+mse[[i]] <- fit$mse
+frcTemp <- forecast(fit,h=hAggr[i])$mean
+# Re-structure forecasts
+frc[[i]] <- matrix(frcTemp,ncol=hAggr[1]) # Organised as column per year
+}
+```
+
+```{r}
+frcAll <- abind(frc,along=1)
+frcAll
+```
+
+```{r}
+# Structural:
+W <- diag(1/rowSums(S))
+Gstr <- solve(t(S)%*%W%*%S)%*%t(S)%*%W
+# Variance:
+mse <- unlist(mse)
+W <- diag(1/mse[rep((1:k),rev(AL))])
+Gvar <- solve(t(S)%*%W%*%S)%*%t(S)%*%W
+```
+
+```{r}
+# Create the bottom level forecasts
+frcBRec <- Gstr %*% frcAll
+frcFinal <- as.numeric(frcBRec)[1:hrz]
+# We can also translate this into a time series object
+frcFinal <- ts(frcFinal,frequency=frequency(y),start=end(y)[1] + deltat(y)*end(y)[2])
+frcFinal
+```
+
+```{r}
+ts.plot(y,frcFinal,col=c("black","red"))
+```
+
+```{r}
+frcARec <- S %*% frcBRec 
+```
+
+```{r}
+frcARec
+```
