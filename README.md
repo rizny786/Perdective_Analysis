@@ -27,3 +27,5 @@ PDF and HTML version are available in this folder.
 -   [HTML Files](HTML)
 
 *Feel free to explore these tutorials to enhance your understanding of time series analysis in R. Happy learning!*
+
+Special credits to our professor - [Nikolaos Kourentzes](https://kourentzes.com/forecasting/)
