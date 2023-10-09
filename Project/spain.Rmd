@@ -1,0 +1,655 @@
+---
+title: "testing"
+author: "Rizny Mubarak"
+date: "2023-10-08"
+output: html_document
+---
+
+### Load Data
+
+```{r}
+# Load Library
+library(ggplot2)
+library(forecast)
+library(tsutils)
+library(MLmetrics)
+library(glmnet)
+```
+
+```{r setup, include=FALSE}
+load('dataTour.Rdata')
+```
+
+```{r}
+y <- dataTour$UK
+y <- window(y,start=c(2010, quarter=1),end=c(2018,quarter = 4))
+```
+
+```{r}
+plot(y, main = "Origin Countries")
+```
+
+```{r}
+NROW(y)
+```
+
+## Spain
+
+### 1. in- and out-of-sample and data exploration
+
+```{r}
+spain <- y[,'Spain']
+spain.trn <- head(spain,28)
+spain.tst <- tail(spain,8)
+```
+
+```{r}
+cma <- cmav(spain.trn, outplot=TRUE)
+```
+
+```{r}
+seasplot(spain.trn)
+```
+
+```{r}
+seasplot(spain.trn,outplot=2)
+```
+
+```{r}
+seasplot(spain.trn,outplot=3)
+```
+
+```{r}
+seasplot(head(spain.trn,4*4))
+```
+
+```{r}
+seasplot(tail(spain.trn,4*4))
+```
+
+```{r}
+dc <- decomp(spain.trn, outplot=TRUE)
+```
+
+### 2. Exponential smoothing
+
+#### 2.1 Selection of forecasts using information criteria
+
+```{r}
+fit <- ets(spain.trn)
+fit
+```
+
+```{r}
+# Level model
+fit1 <- ets(spain.trn,model="ANN")
+# Seasonal model
+fit2 <- ets(spain.trn,model="ANA")
+# Linear trend model
+fit3 <- ets(spain.trn,model="AAN",damped=FALSE)
+# Damped trend model
+fit4 <- ets(spain.trn,model="AAN",damped=TRUE)
+# Trend seasonal model
+fit5 <- ets(spain.trn,model="AAA",damped=FALSE)
+# Damped trend seasonal model
+fit6 <- ets(spain.trn,model="AAA",damped=TRUE)
+```
+
+```{r}
+aicc <- c(fit1$aicc,fit2$aicc,fit3$aicc,fit4$aicc,fit5$aicc,fit6$aicc)
+```
+
+```{r}
+# Name Aicc vector
+names(aicc) <- c("ANN","ANA","AAN","AAdN","AAA","AAdA")
+aicc
+# 1577.6	1577.6	1577.6	1581.08	1560.44	1561.59
+```
+
+```{r}
+which.min(aicc)
+```
+
+#### 2.2 Selection of forecasts using a validation set
+
+```{r}
+spain.ins <- head(spain.trn,5 * 4)
+spain.val <- tail(spain.trn,2 * 4)
+```
+
+```{r}
+h <- 4
+```
+
+```{r}
+fitav <- ets(spain.ins,model="MAM")
+fit1v <- ets(spain.ins,model="ANN")
+fit2v <- ets(spain.ins,model="ANA")
+fit3v <- ets(spain.ins,model="AAN",damped=FALSE)
+fit4v <- ets(spain.ins,model="AAN",damped=TRUE)
+fit5v <- ets(spain.ins,model="AAA",damped=FALSE)
+fit6v <- ets(spain.ins,model="AAA",damped=TRUE)
+```
+
+```{r}
+frcav <- forecast(fitav,h=h)
+frc1v <- forecast(fit1v,h=h)
+frc2v <- forecast(fit2v,h=h)
+frc3v <- forecast(fit3v,h=h)
+frc4v <- forecast(fit4v,h=h)
+frc5v <- forecast(fit5v,h=h)
+frc6v <- forecast(fit6v,h=h)
+frc7v <- tail(spain.ins,h)[1:h]
+```
+
+```{r}
+errav <- round(MAPE(frcav$mean,spain.val[1:h]), digits = 3) * 100
+err1v <- round(MAPE(frc1v$mean,spain.val[1:h]), digits = 3) * 100
+err2v <- round(MAPE(frc2v$mean,spain.val[1:h]), digits = 3) * 100
+err3v <- round(MAPE(frc3v$mean,spain.val[1:h]), digits = 3) * 100
+err4v <- round(MAPE(frc4v$mean,spain.val[1:h]), digits = 3) * 100
+err5v <- round(MAPE(frc5v$mean,spain.val[1:h]), digits = 3) * 100
+err6v <- round(MAPE(frc6v$mean,spain.val[1:h]), digits = 3) * 100
+err7v <- round(MAPE(frc7v,spain.val[1:h]), digits = 3) * 100
+```
+
+```{r}
+errv <- c(errav,err1v, err2v, err3v, err4v, err5v, err6v, err7v)
+names(errv) <- c("MAM","ANN","ANA","AAN","AAdN","AAA","AAdA","Naive")
+errv
+```
+
+```{r}
+which.min(errv)
+```
+
+#### 2.3 Selection of forecasts using a validation set
+
+```{r}
+omax <- length(spain.val) - h + 1
+omax
+```
+
+```{r}
+# Define Model's
+models <- c("MNM","ANN", "ANA", "AAN", "AAN", "AAA", "AAA", "Naive")
+damped <- c( FALSE,FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, FALSE)
+```
+
+```{r}
+err <- array(NA,c(omax,8))
+frcs <- array(NA,c(h,8))
+```
+
+```{r}
+# For each forecast origin
+for (o in 1:omax) {
+  spain.ins <- head(spain.trn, 5 * 4 - 1 + o)
+  spain.val <- tail(spain.trn, 2 * 4 - o + 1)
+  # Fit and forecast
+  for (m in 1:7) {
+    fitTemp <- ets(spain.ins, model = models[m], damped = damped[m])
+    frcs[, m] <- forecast(fitTemp, h = h)$mean
+    err[o, m] <- round(MAPE(frcs[, m], spain.val[1:h]), digits = 3) * 100
+    
+  }
+  #Forecast using the seasonal naive
+  frcs[, 8] <- tail(spain.ins, 8)[1:h]
+  err[o, 8] <- round(MAPE(frcs[, 8], spain.val[1:h]), digits = 3) * 100
+  
+}
+err
+```
+
+```{r}
+colnames(err) <- c("MAM", "ANN", "ANA", "AAN", "AAdN", "AAA", "AAdA", "Naive")
+```
+
+```{r}
+errMean <- round(colMeans(err), digits =3)
+errMean
+```
+
+```{r}
+which.min(errMean)
+```
+
+```{r}
+boxplot(err)
+```
+
+#### 2.4 Out-of-sample evaluation
+
+```{r}
+omaxTest <- length(spain.tst) - h + 1
+length(spain.tst)
+h
+```
+
+```{r}
+modelsTest <-
+  c("MAM", "ANA", "AAA", "AAA", "Naive", "CombMean", "CombMedian")
+dampedTest <- c(FALSE, FALSE, TRUE, FALSE)
+# Pre-allocate memory
+omaxTest <- length(spain.tst) - h + 1
+errTest <- array(NA, c(omaxTest, 7))
+frcsTest <- array(NA, c(h, 7))
+# For each forecast origin
+for (o in 1:omaxTest) {
+  spain.trnTest <- head(spain, 7 * 4 - 1 + o)
+  spain.tstTest <- tail(spain, 2 * 4 - o + 1)
+  # Fit and forecast
+  for (m in 1:4) {
+    fitTemp <-
+      ets(spain.trnTest, model = modelsTest[m], damped = dampedTest[m])
+    frcsTest[, m] <- forecast(fitTemp, h = h)$mean
+    errTest[o, m] <-
+      round(MAPE(frcsTest[, m], spain.tstTest[1:h]), digits = 3)
+  }
+  # Forecast using the seasonal naive
+  frcsTest[, 5] <- tail(spain.trnTest, 8)[1:h]
+  errTest[o, 5] <- round(MAPE(frcsTest[, 5], spain.tstTest[1:h]), digits = 3) * 100
+  # Combinations 
+  # Mean
+  frcsTest[, 6] <- apply(frcsTest[, 1:5], 1, mean)
+  errTest[o, 6] <- round(MAPE(frcsTest[, 6], spain.tstTest[1:h]), digits = 3) * 100
+  # Median
+  frcsTest[, 7] <- apply(frcsTest[, 1:5], 1, median)
+  errTest[o, 7] <- round(MAPE(frcsTest[, 7], spain.tstTest[1:h]), digits = 3) * 100
+}
+#Assign names to errors
+colnames(errTest) <-
+  c("MAM", "ANA", "AAA", "AAA", "Naive", "CombMean", "CombMedian")
+# Summarise and plot errors
+boxplot(errTest)
+```
+
+```{r}
+errTestMean <- round(colMeans(errTest), digits =3)
+print(errTestMean)
+```
+
+```{r}
+which.min(errTestMean)
+```
+
+#### 2.5 Forecast combination with AIC weights
+
+```{r}
+models <- c("MAM","ANA","AAA","AAA")
+damped <- c(FALSE,FALSE,TRUE,FALSE)
+```
+
+```{r}
+fit <- list()
+frc <- array(NA,c(4,4),dimnames=list(NULL,models))
+```
+
+```{r}
+for (i in 1:4){
+fit[[i]] <- ets(spain.trn,model=models[i],damped=damped[i])
+frc[,i] <- forecast(fit[[i]],h=4)$mean
+}
+```
+
+```{r}
+AIC <- unlist(lapply(fit,function(x){x$aic}))
+AIC
+```
+
+```{r}
+dAIC <- AIC - min(AIC)
+dAIC <- exp(-0.5*dAIC)
+waic <- dAIC/sum(dAIC)
+waic
+```
+
+```{r}
+# # Prepare variables and models
+# fit2 <- list()
+# frc2 <- array(NA,c(12,6))
+# models <- rep(c("AAA","MAM","MMM"),2)
+# damped <- c(rep(FALSE,3),rep(TRUE,3))
+# # Fit models and generate forecasts
+# for (i in 1:6){
+# fit2[[i]] <- ets(y.trn,model=models[i],damped=damped[i])
+# frc2[,i] <- forecast(fit2[[i]],h=12)$mean
+# }
+# # Extract AIC and calculate weights
+# AIC2 <- unlist(lapply(fit2,function(x){x$aic}))
+# dAIC2 <- AIC2 - min(AIC2)
+# dAIC2 <- exp(-0.5*dAIC2)
+# waic2 <- dAIC2/sum(dAIC2)
+# round(waic2,4)
+```
+
+```{r}
+# # AIC weights
+# frcComb <- frc2 %*% cbind(waic2)
+# # Mean
+# frcComb <- cbind(frcComb, rowMeans(frc2))
+# # To calculate the median without loops we use apply()
+# frcComb <- cbind(frcComb, apply(frc2,1,median))
+# # Selection
+# frcComb <- cbind(frcComb, frc2[,which.min(AIC2)])
+# colnames(frcComb) <- c("Comb.AIC","Comb.Mean","Comb.Median","Selection")
+```
+
+### 2. Regression
+
+```{r}
+spain <- y[,'Spain']
+spain.trn <- head(spain,28)
+spain.tst <- tail(spain,8)
+pacf(spain.trn)
+```
+
+```{r}
+n <- length(spain.trn)
+n
+```
+
+```{r}
+X <- array(NA,c(n,4))
+```
+
+```{r}
+for (i in 1:4){
+X[i:n,i] <- spain.trn[1:(n-i+1)]
+}
+#Name the columns
+colnames(X) <- c("y",paste0("lag",1:3))
+X[1:10,]
+```
+
+```{r}
+X[(n-9):n,]
+```
+
+```{r}
+X <- as.data.frame(X)
+plot(X)
+```
+
+#### 2.1 Lags - Models
+
+```{r}
+# The complete model
+fit1 <- lm(y~.,data=X)
+summary(fit1)
+```
+
+```{r}
+# The stepwise model
+fit2 <- step(fit1,trace = 0)
+summary(fit2)
+```
+
+```{r}
+c(AIC(fit1),AIC(fit2))
+```
+
+```{r}
+# In-sample fit:
+plot(X$y,type="l")
+frc <- predict(fit2,X)
+lines(frc,col="red")
+```
+
+```{r}
+formula(fit2)
+```
+
+```{r}
+frc1 <- array(NA,c(8,1))
+for (i in 1:8){
+Xnew <- tail(spain.trn,3)
+Xnew <- c(Xnew,frc1)
+Xnew <- Xnew[i:(2+i)]
+Xnew <- Xnew[3:1]
+Xnew <- array(Xnew, c(1,3))
+colnames(Xnew) <- paste0("lag",1:3)
+Xnew <- as.data.frame(Xnew)
+# Forecast
+frc1[i] <- predict(fit2,Xnew)
+}
+```
+
+```{r}
+frc1 <- ts(frc1,frequency=frequency(spain.tst),start=start(spain.tst))
+```
+
+```{r}
+ts.plot(spain.trn,spain.tst,frc1,col=c("black","black","red"))
+```
+
+-   Handle seasonality
+
+```{r}
+D <- rep(1:4,7) # Replicate 1:4 16 times
+D <- factor(D)
+D
+```
+
+```{r}
+class(D)
+```
+
+```{r}
+factor(rep(c("Q1","Q2","Q3","Q4"),7))
+```
+
+```{r}
+X2 <- cbind(X,D)
+colnames(X2) <- c(colnames(X2)[1:4],"D")
+X2
+```
+
+```{r}
+fit3 <- lm(y~.,data=X2)
+summary(fit3)
+```
+
+```{r}
+# Find NA in X2
+idx <- is.na(X2)
+idx <- rowSums(idx)
+idx <- idx == 0
+```
+
+```{r}
+fit_temp <- lm(y~.,data=X2[idx,])
+# fit_temp is the same as fit3, without the first NA part
+fit4 <- step(fit_temp,trace = 0, direction = "both")
+summary(fit4)
+```
+
+```{r}
+AIC(fit3)
+```
+
+```{r}
+c(AIC(fit2),AIC(fit4))
+```
+
+```{r}
+frc <- predict(fit4,X2)
+ts.plot(spain.trn,frc,col=c("black","red"))
+```
+
+```{r}
+frc2 <- array(NA, c(8, 1))
+for (i in 1:8) {
+  Xnew <- tail(spain.trn, 3)
+  Xnew <- c(Xnew, frc2)
+  Xnew <- Xnew[i:(2 + i)]
+  Xnew <- Xnew[3:1]
+  Xnew <- array(Xnew, c(1, 3))
+  colnames(Xnew) <- paste0("lag", 1:3)
+  Xnew <- as.data.frame(Xnew)
+  D <- as.factor(rep(1:4, 2)[i])
+  Xnew <- cbind(Xnew, D)
+  # Forecast
+  frc2[i] <- predict(fit4, Xnew)
+}
+frc2
+```
+
+```{r}
+cbind(frc1, frc2)
+```
+
+```{r}
+# Transform to time series
+frc2 <- ts(frc2,frequency=frequency(spain.tst),start=start(spain.tst))
+# Plot
+ts.plot(spain.trn,spain.tst,frc1,frc2,col=c("black","black","red","blue"))
+legend("bottomright",c("Autoregressive","Dummies"),col=c("red","blue"),lty=1)
+```
+
+-   Handle trends
+
+```{r}
+X3 <- X
+```
+
+```{r}
+# The function ncol() counts how many columns
+for (i in 1:ncol(X3)){
+X3[,i] <- c(NA,diff(X3[,i]))
+}
+print(X3)
+```
+
+```{r}
+summary(lm(y~.,X3))
+```
+
+```{r}
+X3 <- na.omit(X3)
+fit5 <- step(lm(y ~ ., data = X3), trace = 0)
+summary(fit5)
+```
+
+```{r}
+summary(fit5)
+```
+
+```{r}
+frc3 <- array(NA,c(8,1))
+for (i in 1:8){
+# Calculate the differences of the in-sample data
+spain.diff <- diff(spain.trn)
+# Create lags - same as before
+Xnew <- tail(spain.diff,3)
+
+Xnew <- c(Xnew,frc3)
+Xnew <- Xnew[i:(2+i)]
+Xnew <- Xnew[3:1]
+Xnew <- array(Xnew, c(1,3))
+colnames(Xnew) <- paste0("lag",1:3)
+Xnew <- as.data.frame(Xnew)
+# Forecast
+frc3[i] <- predict(fit5,Xnew)
+}
+```
+
+```{r}
+# Transform to time series
+frc3 <- ts(frc3,frequency=frequency(spain.tst),start=start(spain.tst))
+# Plot
+ts.plot(diff(spain.trn),frc3,col=c("black","red"))
+```
+
+```{r}
+frc3ud <- cumsum(c(tail(spain.trn,1),frc3))
+frc3ud <- frc3ud[-1]
+```
+
+```{r}
+frc3ud <- ts(frc3ud,frequency=frequency(spain.tst),start=start(spain.tst))
+ts.plot(spain.trn,spain.tst,frc1,frc2,frc3ud,col=c("black","black","red","blue","magenta"))
+legend("bottomright",c("Autoregressive","Dummies","Difference"),col=c("red","blue","magenta"),lty=1)
+```
+
+```{r}
+actual <- matrix(rep(spain.tst,3),ncol=3)
+actual
+```
+
+```{r}
+error <- abs(actual - cbind(frc1,frc2,frc3ud))/actual * 100
+MAPE <- colMeans(error)
+MAPE
+```
+
+#### 2.2 Lasso 
+
+```{r}
+xx <- as.matrix(X[-(1:3),-1])
+yy <- as.matrix(X[-(1:3),1])
+```
+
+```{r}
+lasso <- cv.glmnet(x=xx,y=yy, grouped = FALSE)
+```
+
+```{r}
+coef(lasso)
+```
+
+```{r}
+plot(lasso)
+```
+
+```{r}
+frc2 <- array(NA,c(8,1))
+for (i in 1:8){
+# Create inputs - note for lasso we do not transform these into data.frame
+Xnew <- c(tail(spain.trn,3),frc2)
+Xnew <- (Xnew[i:(2+i)])[3:1]
+Xnew <- array(Xnew, c(1,3))
+colnames(Xnew) <- paste0("lag",1:3)
+# Forecast
+frc2[i] <- predict(lasso,Xnew)
+}
+```
+
+```{r}
+# Transform to time series
+frc2 <- ts(frc2,frequency=frequency(spain.tst),start=start(spain.tst))
+# Plot together with fit2
+ts.plot(spain.trn,spain.tst,frc1,frc2,col=c("black","black","red","blue"))
+legend("bottomright",c("OLS","Lasso"),col=c("red","blue"),lty=1)
+```
+
+```{r}
+ridge <- cv.glmnet(x=xx,y=yy,alpha=0, grouped = FALSE)
+coef(ridge)
+```
+
+```{r}
+cc <- as.matrix(cbind(coef(lasso),coef(ridge)))
+colnames(cc) <- c("lasso","ridge")
+round(cc,3)
+```
+
+```{r}
+frc3 <- array(NA,c(8,1))
+for (i in 1:8){
+# Create inputs - note for lasso we do not transform these into data.frame
+Xnew <- c(tail(spain.trn,3),frc2)
+Xnew <- (Xnew[i:(2+i)])[3:1]
+Xnew <- array(Xnew, c(1,3))
+colnames(Xnew) <- paste0("lag",1:3)
+# Forecast
+frc3[i] <- predict(ridge,Xnew)
+}
+```
+
+```{r}
+frc3 <- ts(frc3,frequency=frequency(spain.tst),start=start(spain.tst))
+# Plot together with fit2
+ts.plot(spain.trn,spain.tst,frc1,frc2,frc3,col=c("black","black","red","blue","magenta"))
+legend("bottomright",c("OLS","Lasso","Ridge"),col=c("red","blue","magenta"),lty=1)
+```

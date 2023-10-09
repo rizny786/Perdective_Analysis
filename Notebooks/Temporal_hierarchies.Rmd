@@ -2,7 +2,10 @@
 title: "Temporal hierarchies"
 author: "Rizny Mubarak"
 date: "2023-09-29"
-output: pdf_document
+output: 
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
 ---
 
 ### 1. Data and packages
@@ -94,9 +97,5 @@ ts.plot(y,frcFinal,col=c("black","red"))
 ```
 
 ```{r}
-frcARec <- S %*% frcBRec 
-```
-
-```{r}
-frcARec
+frcARec <- S %*% frcBRec
 ```
