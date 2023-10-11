@@ -19,18 +19,14 @@ source('functions.r')
 load('dataTour.Rdata')
 ```
 
-```{r}
-y <- dataTour$UK
-```
-
-## Spain
+## France
 
 ```{r}
 y <- dataTour$UK
 ```
 
 ```{r}
-plot(y, main = "Countries")
+plot(y, main = "France")
 ```
 
 ### 1. in- and out-of-sample and data exploration
@@ -69,6 +65,10 @@ selected_model  <- append_unique_model(aicc_model(datasets$train),selected_model
 selected_model
 ```
 
+```{r}
+selected_model[[1]]
+```
+
 #### 2.2 Validation Error
 
 ```{r}
@@ -82,7 +82,7 @@ selected_model
 #### 2.3 Rolling origin In Sample
 
 ```{r}
-selected_model_ROCV <- ROCV_Model(datasets$train, 0.8, selected_model, 4)
+selected_model_ROCV <- ROCV_Model(datasets$train, 0.8, selected_model, 8)
 
 ```
 
@@ -110,25 +110,20 @@ frcComb <- find_weighted_combination(datasets$train,selected_model, length(datas
 calculate_MAPE(frcComb,datasets$test)
 ```
 
-```{r}
-# ploting Automatic ANN
-frc <- forecast(fit, h=12)
-plot(frc, main = "Forcast France")
-lines(fit$fitted,col="green")
-```
-
 ### 2. Regression
 
 ```{r}
-france <- window(y, start = c(2000,1), end = c(2018,4))[, 'France']
-france.trn <- head(france,68)
-france.tst <- tail(france,8)
-pacf(france.trn)
+data_reg <- create_datasets(y, 'France', c(2000, 1), c(2018, 4), 0.95)
 ```
 
 ```{r}
-n <- length(france.trn)
+n <- length(data_reg$train)
 n
+```
+
+```{r}
+pacf <- pacf(data_reg$train)
+
 ```
 
 ```{r}
@@ -136,12 +131,12 @@ X <- array(NA,c(n,5))
 ```
 
 ```{r}
-for (i in 1:4) {
-  X[i:n, i] <- france.trn[1:(n - i + 1)]
+for (i in 1:5){
+X[i:n,i] <- france.trn[1:(n-i+1)]
 }
 #Name the columns
-colnames(X) <- c("y", paste0("lag", 1:4))
-X[1:10, ]
+colnames(X) <- c("y",paste0("lag",1:4))
+X[1:10,]
 ```
 
 ```{r}
@@ -153,7 +148,7 @@ X <- as.data.frame(X)
 plot(X)
 ```
 
-#### 2.1 OLS
+#### 2.1 Lags - Models
 
 ```{r}
 # The complete model
@@ -205,10 +200,10 @@ frc1 <- ts(frc1,frequency=frequency(france.tst),start=start(france.tst))
 ts.plot(france.trn,france.tst,frc1,col=c("black","black","red"))
 ```
 
-#### 2.2 OLS -Seasonal
+-   Handle seasonality
 
 ```{r}
-D <- rep(1:4,17) # Replicate 1:4 16 times
+D <- rep(1:4,7) # Replicate 1:4 16 times
 D <- factor(D)
 D
 ```
@@ -218,7 +213,7 @@ class(D)
 ```
 
 ```{r}
-factor(rep(c("Q1","Q2","Q3","Q4"),17))
+factor(rep(c("Q1","Q2","Q3","Q4"),7))
 ```
 
 ```{r}
@@ -289,7 +284,7 @@ ts.plot(france.trn,france.tst,frc1,frc2,col=c("black","black","red","blue"))
 legend("bottomright",c("Autoregressive","Dummies"),col=c("red","blue"),lty=1)
 ```
 
-#### 2.3 OLS - Trended
+-   Handle trends
 
 ```{r}
 X3 <- X
@@ -326,7 +321,7 @@ france.diff <- diff(france.trn)
 Xnew <- tail(france.diff,4)
 
 Xnew <- c(Xnew,frc3)
-Xnew <- Xnew[i:(4+i)]
+Xnew <- Xnew[i:(3+i)]
 Xnew <- Xnew[4:1]
 Xnew <- array(Xnew, c(1,4))
 colnames(Xnew) <- paste0("lag",1:4)
@@ -350,8 +345,8 @@ frc3ud <- frc3ud[-1]
 
 ```{r}
 frc3ud <- ts(frc3ud,frequency=frequency(france.tst),start=start(france.tst))
-ts.plot(france.trn,france.tst,frc1,frc2,frc3ud,col=c("black","black","red","blue","magenta"))
-legend("bottomright",c("Autoregressive","Dummies","Difference"),col=c("red","blue","magenta"),lty=1)
+ts.plot(france.trn,france.tst,frc1,frc2,frc3ud,col=c("black","black","red","blue","gold"))
+legend("bottomright",c("Autoregressive","Dummies","Difference"),col=c("red","blue","gold"),lty=1)
 ```
 
 ```{r}
@@ -365,7 +360,7 @@ MAPE <- colMeans(error)
 MAPE
 ```
 
-#### 2.4 Lasso
+#### 2.2 Lasso
 
 ```{r}
 xx <- as.matrix(X[-(1:4),-1])
@@ -405,8 +400,6 @@ ts.plot(france.trn,france.tst,frc1,frc2,col=c("black","black","red","blue"))
 legend("bottomright",c("OLS","Lasso"),col=c("red","blue"),lty=1)
 ```
 
-#### 2.5 Ridge
-
 ```{r}
 ridge <- cv.glmnet(x=xx,y=yy,alpha=0, grouped = FALSE)
 coef(ridge)
@@ -434,35 +427,6 @@ frc3[i] <- predict(ridge,Xnew)
 ```{r}
 frc3 <- ts(frc3,frequency=frequency(france.tst),start=start(france.tst))
 # Plot together with fit2
-ts.plot(france.trn,france.tst,frc1,frc2,frc3,col=c("black","black","red","blue","magenta"))
-legend("bottomright",c("OLS","Lasso","Ridge"),col=c("red","blue","magenta"),lty=1)
-```
-
-### 3. Results
-
-```{r}
-france = window(y, start = c(2000,1), end = c(2018,4))[, 'France']
-frc_r <- array(NA,c(8,1))
-for (i in 1:8){
-# Create inputs - note for lasso we do not transform these into data.frame
-Xnew <- c(tail(france,4),frc2)
-Xnew <- (Xnew[i:(3+i)])[4:1]
-Xnew <- array(Xnew, c(1,4))
-colnames(Xnew) <- paste0("lag",1:4)
-# Forecast
-frc_r[i] <- predict(ridge,Xnew)
-}
-```
-
-```{r}
-fit_e = ets(france,"AAA")
-frc_e <- forecast(fit_e, h=4)
-```
-
-```{r}
-frc_r <- ts(frc_r,frequency=4,start=2019)
-# Plot both forecasts on the same graph, limiting x-axis to start from 2015
-plot(frc_e, main = "France ETS vs Regression", xlim = c(2015,2020))
-lines(frc_e$mean, col = "red")
-lines(frc_r, col = "green")
+ts.plot(france.trn,france.tst,frc1,frc2,frc3,col=c("black","black","red","blue","green"))
+legend("bottomright",c("OLS","Lasso","Ridge"),col=c("red","blue","green"),lty=1)
 ```
